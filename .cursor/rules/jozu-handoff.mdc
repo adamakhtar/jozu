@@ -1,0 +1,20 @@
+---
+description: Jozu project handoff — read before working, update before leaving
+alwaysApply: true
+---
+
+Jozu is a native Swift/SwiftUI language-learning companion (Mac first, iPhone later).
+
+Before doing work, read:
+
+1. `.jozu/HANDOFF.md`
+2. `.jozu/STATUS.md`
+3. `.jozu/DECISIONS.md` if the task touches architecture
+
+This is the only project-management source of truth. Do not invent a second tracker.
+
+After completing work, update `HANDOFF.md` and `STATUS.md`. Move backlog items in `.jozu/BACKLOG.md` when their state changes. Record new locked choices in `.jozu/DECISIONS.md`.
+
+Native Swift only. No React/Electron/JS unless a later decision explicitly overrides that.
+
+This cloud environment is Linux. The Mac app cannot be compiled or launched here. Do not pretend a local GUI run happened.
