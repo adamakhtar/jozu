@@ -30,6 +30,8 @@ struct SettingsView: View {
         .formStyle(.grouped)
         .padding()
         .navigationTitle("Settings")
+        .preferredColorScheme(.light)
+        .foregroundStyle(JozuTheme.ink)
     }
 }
 

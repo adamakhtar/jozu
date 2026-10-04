@@ -8,6 +8,7 @@ struct JozuApp: App {
         WindowGroup {
             ChatView()
                 .environment(settings)
+                .preferredColorScheme(.light)
         }
         .defaultSize(width: 760, height: 860)
 

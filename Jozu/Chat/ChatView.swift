@@ -17,6 +17,8 @@ struct ChatView: View {
             composer
         }
         .background(JozuTheme.paper)
+        .preferredColorScheme(.light)
+        .tint(JozuTheme.ink)
         .onAppear {
             if session == nil {
                 session = ChatSession(settings: settings)
@@ -125,8 +127,16 @@ struct ChatView: View {
             }
 
             HStack(alignment: .bottom, spacing: 10) {
-                TextField("Ask about \(settings.targetLanguage)…", text: draftBinding, axis: .vertical)
+                TextField(
+                    "",
+                    text: draftBinding,
+                    prompt: Text("Ask about \(settings.targetLanguage)…")
+                        .foregroundStyle(JozuTheme.muted),
+                    axis: .vertical
+                )
                     .textFieldStyle(.plain)
+                    .font(.system(size: 14))
+                    .foregroundStyle(JozuTheme.ink)
                     .lineLimit(1...6)
                     .focused($composerFocused)
                     .onSubmit {

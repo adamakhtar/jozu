@@ -8,9 +8,7 @@ Slice: 0 — Mac chat window
 
 ## Now
 
-Slice 0 exists. First Mac build failed in `LLMError.errorDescription`: mixed `switch` (bare string cases + `return` in another) is not a Swift 5 expression, so the getter had no return. Fixed — user should pull and ⌘B again.
-
-The hardened-runtime / ad-hoc codesign line is a note, not the failure.
+Slice 0 window is up on the user's Mac. Composer text was invisible (system dark-mode field editor on a cream field). Forced light appearance + explicit ink on the input. User should pull and rebuild.
 
 Open `Jozu.xcodeproj` on a Mac and run the **Jozu** scheme. This Linux agent cannot compile or launch the app.
 
