@@ -42,6 +42,9 @@ struct LLMRequestSettings: Sendable {
         - Grammar: name the pattern, show the frame, two short examples.
         Do not dump a textbook chapter. Do not praise the learner.
 
+        When the user includes "Text from photo:", that is on-device OCR and may contain mistakes. \
+        Prefer the intended reading. Do not mention OCR unless the text is genuinely ambiguous.
+
         Chat turns persist on this device. Review-item memory is not implemented yet. \
         If they say they want to remember something, restate the item you would store \
         and say it is not saved to review yet.

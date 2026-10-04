@@ -2,6 +2,12 @@
 
 Append-only. Newest first. Supersede; do not rewrite history.
 
+## 2026-10-04 — Vision OCR, image stays local
+
+**Choice:** File picker / drop / paste → `VNRecognizeTextRequest` (accurate, language-corrected) with native + target language hints. Retry with no language list if that fails. User can edit the reading. Only the text is sent to the LLM. Persist a JPEG thumbnail + OCR string on the turn.
+
+**Why:** On-device, Mac + iPhone later, no OCR SDK. Multimodal upload is a later fallback if Vision is thin on a script.
+
 ## 2026-10-04 — One SwiftData thread, streamed tokens
 
 **Choice:** `StoredConversation` / `StoredMessage` on disk via SwiftData. One conversation. User/assistant turns saved after they complete (user immediately, assistant when the stream finishes). LLM path is `stream` only (SSE `chat/completions`). Stub also chunks so the loop is visible without a key.

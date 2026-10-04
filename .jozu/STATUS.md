@@ -1,21 +1,20 @@
 # Status
 
-Last updated: 2026-10-04 (S1/S2: persist one thread + stream tokens)
+Last updated: 2026-10-04 (S3: Vision OCR on attached photos)
 
 ## What exists
 
 - Native macOS SwiftUI app **Jozu**.
 - Chat UI, reply-language toggle, Settings (languages + OpenAI-compatible key in Keychain).
-- `LLMServicing.stream`: stub chunks without a key; SSE from OpenAI-compatible hosts with a key.
-- SwiftData: one `StoredConversation` + `StoredMessage` rows. Relaunch restores the thread. **Clear** deletes it.
-- App sandbox + outbound network.
+- Streamed replies (stub or live SSE). One SwiftData thread. **Clear** deletes it.
+- Photo attach (file picker, drop, paste). Vision OCR on-device using native + target language hints. Editable reading. Thumbnail persisted; image is not sent to the model.
 
 ## What does not exist
 
 - Multiple conversations
-- Photos / OCR
 - Review items / schedule / grading
 - Screen / other-app peek
+- Multimodal image upload to the LLM
 - iPhone target (views are mostly portable; Xcode target is macOS-only)
 
 ## Environment constraint

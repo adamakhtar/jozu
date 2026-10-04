@@ -6,6 +6,7 @@ import Observation
 final class ChatSession {
     var messages: [Message] = []
     var draft = ""
+    var pendingPhoto: PendingPhoto?
     var isSending = false
     var errorMessage: String?
 
@@ -19,21 +20,65 @@ final class ChatSession {
     }
 
     var canSend: Bool {
-        !isSending && !draft.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+        guard !isSending else { return false }
+        if pendingPhoto?.isRecognizing == true { return false }
+        let hasText = !draft.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+        return hasText || pendingPhoto != nil
     }
 
     var scrollAnchor: String {
-        "\(messages.count)|\(messages.last?.content.count ?? 0)|\(isSending)"
+        "\(messages.count)|\(messages.last?.content.count ?? 0)|\(isSending)|\(pendingPhoto != nil)"
+    }
+
+    func attachImage(data: Data) async {
+        errorMessage = nil
+        guard
+            let thumbnail = ImageData.jpegThumbnail(from: data, maxPixelSize: 480),
+            let ocrImage = ImageData.cgImage(from: data, maxPixelSize: 2000)
+        else {
+            errorMessage = "Could not read that image."
+            return
+        }
+
+        pendingPhoto = PendingPhoto(thumbnailJPEG: thumbnail, ocrText: "", isRecognizing: true)
+        let languages = VisionLanguage.codes(from: [settings.targetLanguage, settings.nativeLanguage])
+
+        do {
+            let text = try await VisionTextRecognizer.recognize(image: ocrImage, languages: languages)
+            var photo = pendingPhoto
+            photo?.ocrText = text
+            photo?.isRecognizing = false
+            pendingPhoto = photo
+            if text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+                errorMessage = "No text found in the photo. Add a question or send it anyway."
+            }
+        } catch {
+            var photo = pendingPhoto
+            photo?.isRecognizing = false
+            pendingPhoto = photo
+            errorMessage = "Could not read text: \(error.localizedDescription)"
+        }
+    }
+
+    func discardPhoto() {
+        pendingPhoto = nil
     }
 
     func send() async {
-        let text = draft.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !text.isEmpty, !isSending else { return }
+        let question = draft.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard canSend else { return }
+        let photo = pendingPhoto
 
         draft = ""
+        pendingPhoto = nil
         errorMessage = nil
 
-        let user = Message(role: .user, content: text)
+        let user = Message(
+            role: .user,
+            content: Self.compose(question: question, ocr: photo?.ocrText),
+            photoJPEG: photo?.thumbnailJPEG,
+            ocrText: photo?.ocrText
+        )
         messages.append(user)
         persist(user)
 
@@ -75,10 +120,22 @@ final class ChatSession {
         do {
             try store.deleteAllMessages()
             messages = []
+            pendingPhoto = nil
             errorMessage = nil
         } catch {
             errorMessage = error.localizedDescription
         }
+    }
+
+    private static func compose(question: String, ocr: String?) -> String {
+        let reading = ocr?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+        if reading.isEmpty {
+            return question.isEmpty ? "What should I learn from this photo?" : question
+        }
+        if question.isEmpty {
+            return "Text from photo:\n\(reading)\n\nWhat does this say? Explain anything I should learn from it."
+        }
+        return "Text from photo:\n\(reading)\n\n\(question)"
     }
 
     private func replaceLast(_ message: Message) {

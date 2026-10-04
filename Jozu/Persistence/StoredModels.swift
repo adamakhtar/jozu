@@ -22,19 +22,25 @@ final class StoredMessage {
     var content: String
     var createdAt: Date
     var conversation: StoredConversation?
+    var photoJPEG: Data?
+    var ocrText: String?
 
     init(
         id: UUID,
         roleRaw: String,
         content: String,
         createdAt: Date,
-        conversation: StoredConversation
+        conversation: StoredConversation,
+        photoJPEG: Data? = nil,
+        ocrText: String? = nil
     ) {
         self.id = id
         self.roleRaw = roleRaw
         self.content = content
         self.createdAt = createdAt
         self.conversation = conversation
+        self.photoJPEG = photoJPEG
+        self.ocrText = ocrText
     }
 
     func asMessage() -> Message {
@@ -42,7 +48,9 @@ final class StoredMessage {
             id: id,
             role: Message.Role(rawValue: roleRaw) ?? .assistant,
             content: content,
-            createdAt: createdAt
+            createdAt: createdAt,
+            photoJPEG: photoJPEG,
+            ocrText: ocrText
         )
     }
 }

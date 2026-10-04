@@ -4,14 +4,14 @@ Ordered. Only the top item is “now” unless a conversation explicitly pulls s
 
 ## Now
 
-- [ ] **S1/S2 verify** — Pull, run, send a stub (watch it stream), quit, reopen, confirm the thread is back. Optional: paste an API key.
+- [ ] **S3 verify** — Pull, attach/drop/paste a photo of text, confirm OCR, send (stub is enough).
 
 ## Up next
 
 - [x] **S0 verify** — Mac window runs; composer ink fixed.
 - [x] **S1 live tutor** — Streamed replies; tighter prompt. Live key still optional.
 - [x] **S2 persist chats** — SwiftData, one thread, Clear.
-- [ ] **S3 photo + OCR** — Attach image → Vision recognize → include text (and optionally the image) in the next turn.
+- [x] **S3 photo + OCR** — Attach / drop / paste → Vision → editable text in the turn. Image stays on-device.
 - [ ] **S4 remember** — Chat tool / confirmation that stores a `MemoryItem` (word / sentence / grammar, source turn, notes).
 - [ ] **S5 review list** — Browse items. Due drip. Not a grade session yet.
 - [ ] **S6 review probe** — LLM writes a question, user answers, LLM grades, interval updates.

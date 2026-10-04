@@ -30,7 +30,9 @@ final class ChatStore {
             roleRaw: message.role.rawValue,
             content: message.content,
             createdAt: message.createdAt,
-            conversation: conversation
+            conversation: conversation,
+            photoJPEG: message.photoJPEG,
+            ocrText: message.ocrText
         )
         context.insert(stored)
         conversation.updatedAt = .now
@@ -40,6 +42,8 @@ final class ChatStore {
     func update(_ message: Message) throws {
         if let stored = conversation.messages.first(where: { $0.id == message.id }) {
             stored.content = message.content
+            stored.photoJPEG = message.photoJPEG
+            stored.ocrText = message.ocrText
             conversation.updatedAt = .now
             try context.save()
             return
