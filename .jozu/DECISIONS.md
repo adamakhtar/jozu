@@ -2,6 +2,12 @@
 
 Append-only. Newest first. Supersede; do not rewrite history.
 
+## 2026-10-04 — Remember is local extract + list
+
+**Choice:** Assistant **Remember** button, or a “remember this / 覚えて” user turn. Extract one `{kind, target, note}` via LLM JSON when a key exists; otherwise a heuristic. Persist `StoredMemory` with `nextReviewAt = now`. Memories sheet, Due first. Clear chat does not delete memories. No probe/grade yet.
+
+**Why:** The loop has to be visible without S6. Heuristic keeps stub usable.
+
 ## 2026-10-04 — Vision OCR, image stays local
 
 **Choice:** File picker / drop / paste → `VNRecognizeTextRequest` (accurate, language-corrected) with native + target language hints. Retry with no language list if that fails. User can edit the reading. Only the text is sent to the LLM. Persist a JPEG thumbnail + OCR string on the turn.

@@ -4,7 +4,7 @@ Ordered. Only the top item is “now” unless a conversation explicitly pulls s
 
 ## Now
 
-- [ ] **S3 verify** — Pull, attach/drop/paste a photo of text, confirm OCR, send (stub is enough).
+- [ ] **S4/S5 verify** — Remember a turn (button or “remember this”), open Memories, quit/reopen, item still there.
 
 ## Up next
 
@@ -12,8 +12,8 @@ Ordered. Only the top item is “now” unless a conversation explicitly pulls s
 - [x] **S1 live tutor** — Streamed replies; tighter prompt. Live key still optional.
 - [x] **S2 persist chats** — SwiftData, one thread, Clear.
 - [x] **S3 photo + OCR** — Attach / drop / paste → Vision → editable text in the turn. Image stays on-device.
-- [ ] **S4 remember** — Chat tool / confirmation that stores a `MemoryItem` (word / sentence / grammar, source turn, notes).
-- [ ] **S5 review list** — Browse items. Due drip. Not a grade session yet.
+- [x] **S4 remember** — Remember button + “remember this”. Word / sentence / grammar.
+- [x] **S5 review list** — Memories sheet. Due first. No grade session yet.
 - [ ] **S6 review probe** — LLM writes a question, user answers, LLM grades, interval updates.
 - [ ] **S7 Mac peek** — Selected text from a user-chosen app via Accessibility. Explicit allowlist.
 

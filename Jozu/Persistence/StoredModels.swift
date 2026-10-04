@@ -55,9 +55,54 @@ final class StoredMessage {
     }
 }
 
+@Model
+final class StoredMemory {
+    var id: UUID
+    var kindRaw: String
+    var target: String
+    var note: String
+    var sourceMessageID: UUID?
+    var createdAt: Date
+    var nextReviewAt: Date
+    var intervalDays: Int
+
+    init(
+        id: UUID,
+        kindRaw: String,
+        target: String,
+        note: String,
+        sourceMessageID: UUID?,
+        createdAt: Date,
+        nextReviewAt: Date,
+        intervalDays: Int
+    ) {
+        self.id = id
+        self.kindRaw = kindRaw
+        self.target = target
+        self.note = note
+        self.sourceMessageID = sourceMessageID
+        self.createdAt = createdAt
+        self.nextReviewAt = nextReviewAt
+        self.intervalDays = intervalDays
+    }
+
+    func asItem() -> MemoryItem {
+        MemoryItem(
+            id: id,
+            kind: MemoryKind(rawValue: kindRaw) ?? .word,
+            target: target,
+            note: note,
+            sourceMessageID: sourceMessageID,
+            createdAt: createdAt,
+            nextReviewAt: nextReviewAt,
+            intervalDays: intervalDays
+        )
+    }
+}
+
 enum Persistence {
     static func makeContainer(inMemory: Bool = false) -> ModelContainer {
-        let schema = Schema([StoredConversation.self, StoredMessage.self])
+        let schema = Schema([StoredConversation.self, StoredMessage.self, StoredMemory.self])
         let configuration = ModelConfiguration(schema: schema, isStoredInMemoryOnly: inMemory)
         do {
             return try ModelContainer(for: schema, configurations: [configuration])

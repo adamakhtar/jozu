@@ -20,6 +20,10 @@
 		A11A0000000000000000200B /* StoredModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = A11A0000000000000000100C /* StoredModels.swift */; };
 		A11A0000000000000000200C /* ChatStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = A11A0000000000000000100D /* ChatStore.swift */; };
 		A11A0000000000000000200D /* VisionOCR.swift in Sources */ = {isa = PBXBuildFile; fileRef = A11A0000000000000000100E /* VisionOCR.swift */; };
+		A11A0000000000000000200E /* MemoryItem.swift in Sources */ = {isa = PBXBuildFile; fileRef = A11A0000000000000000100F /* MemoryItem.swift */; };
+		A11A0000000000000000200F /* MemoryStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = A11A00000000000000001010 /* MemoryStore.swift */; };
+		A11A00000000000000002010 /* MemoryExtractor.swift in Sources */ = {isa = PBXBuildFile; fileRef = A11A00000000000000001011 /* MemoryExtractor.swift */; };
+		A11A00000000000000002011 /* MemoryListView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A11A00000000000000001012 /* MemoryListView.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -38,6 +42,10 @@
 		A11A0000000000000000100C /* StoredModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StoredModels.swift; sourceTree = "<group>"; };
 		A11A0000000000000000100D /* ChatStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChatStore.swift; sourceTree = "<group>"; };
 		A11A0000000000000000100E /* VisionOCR.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VisionOCR.swift; sourceTree = "<group>"; };
+		A11A0000000000000000100F /* MemoryItem.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MemoryItem.swift; sourceTree = "<group>"; };
+		A11A00000000000000001010 /* MemoryStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MemoryStore.swift; sourceTree = "<group>"; };
+		A11A00000000000000001011 /* MemoryExtractor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MemoryExtractor.swift; sourceTree = "<group>"; };
+		A11A00000000000000001012 /* MemoryListView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MemoryListView.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -78,6 +86,7 @@
 				A11A0000000000000000000D /* Support */,
 				A11A0000000000000000000E /* Persistence */,
 				A11A0000000000000000000F /* OCR */,
+				A11A00000000000000000010 /* Memory */,
 				A11A0000000000000000100A /* Assets.xcassets */,
 				A11A0000000000000000100B /* Jozu.entitlements */,
 			);
@@ -134,6 +143,17 @@
 				A11A0000000000000000100E /* VisionOCR.swift */,
 			);
 			path = OCR;
+			sourceTree = "<group>";
+		};
+		A11A00000000000000000010 /* Memory */ = {
+			isa = PBXGroup;
+			children = (
+				A11A0000000000000000100F /* MemoryItem.swift */,
+				A11A00000000000000001010 /* MemoryStore.swift */,
+				A11A00000000000000001011 /* MemoryExtractor.swift */,
+				A11A00000000000000001012 /* MemoryListView.swift */,
+			);
+			path = Memory;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -217,6 +237,10 @@
 				A11A0000000000000000200B /* StoredModels.swift in Sources */,
 				A11A0000000000000000200C /* ChatStore.swift in Sources */,
 				A11A0000000000000000200D /* VisionOCR.swift in Sources */,
+				A11A0000000000000000200E /* MemoryItem.swift in Sources */,
+				A11A0000000000000000200F /* MemoryStore.swift in Sources */,
+				A11A00000000000000002010 /* MemoryExtractor.swift in Sources */,
+				A11A00000000000000002011 /* MemoryListView.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

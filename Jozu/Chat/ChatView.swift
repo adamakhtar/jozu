@@ -13,6 +13,7 @@ struct ChatView: View {
     @Environment(\.modelContext) private var modelContext
     @State private var session: ChatSession?
     @State private var showingSettings = false
+    @State private var showingMemories = false
     @State private var importingPhoto = false
     @FocusState private var composerFocused: Bool
 
@@ -31,7 +32,11 @@ struct ChatView: View {
         .tint(JozuTheme.ink)
         .onAppear {
             if session == nil {
-                session = ChatSession(settings: settings, store: ChatStore(context: modelContext))
+                session = ChatSession(
+                    settings: settings,
+                    store: ChatStore(context: modelContext),
+                    memoryStore: MemoryStore(context: modelContext)
+                )
             }
             composerFocused = true
         }
@@ -39,6 +44,14 @@ struct ChatView: View {
             SettingsView()
                 .environment(settings)
                 .frame(minWidth: 440, minHeight: 400)
+        }
+        .sheet(isPresented: $showingMemories) {
+            NavigationStack {
+                MemoryListView(items: session?.memories ?? []) { id in
+                    session?.deleteMemory(id)
+                }
+            }
+            .frame(minWidth: 420, minHeight: 480)
         }
         .fileImporter(
             isPresented: $importingPhoto,
@@ -82,6 +95,14 @@ struct ChatView: View {
             .frame(maxWidth: 260)
             .help("Language the tutor replies in")
 
+            Button {
+                showingMemories = true
+            } label: {
+                Text(session.map { "Memories (\($0.memories.count))" } ?? "Memories")
+            }
+            .buttonStyle(.borderless)
+            .help("Review items saved on this Mac")
+
             Button("Clear") {
                 session?.clear()
             }
@@ -112,9 +133,22 @@ struct ChatView: View {
                                 .padding(.top, 48)
                         }
 
+                        if let notice = session.notice {
+                            Text(notice)
+                                .font(.system(size: 12))
+                                .foregroundStyle(JozuTheme.vermillion)
+                        }
+
                         ForEach(session.messages) { message in
-                            MessageBubble(message: message)
-                                .id(message.id)
+                            MessageBubble(
+                                message: message,
+                                isRemembering: session.rememberingID == message.id,
+                                isSaved: session.isSaved(messageID: message.id),
+                                onRemember: {
+                                    Task { await session.remember(from: message) }
+                                }
+                            )
+                            .id(message.id)
                         }
                     }
                     .padding(20)
@@ -136,7 +170,7 @@ struct ChatView: View {
             Text("Ask about a word, a sentence, or a photo of text.")
                 .font(.system(size: 16, design: .serif))
                 .foregroundStyle(JozuTheme.ink)
-            Text("Photos are read on this Mac. Only the text goes to the model.")
+            Text("Photos are read on this Mac. Remember a turn to save it for later.")
                 .font(.system(size: 13))
                 .foregroundStyle(JozuTheme.muted)
         }
@@ -259,9 +293,9 @@ struct ChatView: View {
 
     private var footerHint: String {
         if settings.hasAPIKey {
-            return "⌘↩ to send. Photo text is read on this Mac."
+            return "⌘↩ to send. Remember a turn, or type “remember this”."
         }
-        return "No API key — replies are stubbed. Photo text is read on this Mac."
+        return "No API key — replies are stubbed. Remember still saves on this Mac."
     }
 
     private var draftBinding: Binding<String> {
@@ -312,6 +346,9 @@ struct ChatView: View {
 
 private struct MessageBubble: View {
     let message: Message
+    var isRemembering = false
+    var isSaved = false
+    var onRemember: (() -> Void)?
 
     var body: some View {
         HStack {
@@ -334,6 +371,23 @@ private struct MessageBubble: View {
                 }
 
                 bubbleBody
+
+                if message.role == .assistant, !message.content.isEmpty, onRemember != nil {
+                    Button {
+                        onRemember?()
+                    } label: {
+                        if isRemembering {
+                            ProgressView().controlSize(.small)
+                        } else {
+                            Text(isSaved ? "Saved" : "Remember")
+                                .font(.system(size: 11, weight: .semibold))
+                        }
+                    }
+                    .buttonStyle(.borderless)
+                    .foregroundStyle(isSaved ? JozuTheme.muted : JozuTheme.vermillion)
+                    .disabled(isRemembering || isSaved)
+                    .help("Save a review item from this turn")
+                }
             }
             .padding(.horizontal, 12)
             .padding(.vertical, 9)

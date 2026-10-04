@@ -2,6 +2,7 @@ import Foundation
 
 protocol LLMServicing: Sendable {
     func stream(messages: [Message], settings: LLMRequestSettings) -> AsyncThrowingStream<String, Error>
+    func complete(messages: [Message], settings: LLMRequestSettings) async throws -> String
 }
 
 struct LLMRequestSettings: Sendable {
@@ -11,6 +12,8 @@ struct LLMRequestSettings: Sendable {
     let model: String
     let apiBaseURL: String
     let apiKey: String
+    var extraInstruction: String
+    var systemOverride: String?
 
     @MainActor
     init(_ settings: AppSettings) {
@@ -20,6 +23,8 @@ struct LLMRequestSettings: Sendable {
         model = settings.model
         apiBaseURL = settings.apiBaseURL
         apiKey = settings.apiKey
+        extraInstruction = ""
+        systemOverride = nil
     }
 
     var replyLanguageName: String {
@@ -45,9 +50,10 @@ struct LLMRequestSettings: Sendable {
         When the user includes "Text from photo:", that is on-device OCR and may contain mistakes. \
         Prefer the intended reading. Do not mention OCR unless the text is genuinely ambiguous.
 
-        Chat turns persist on this device. Review-item memory is not implemented yet. \
-        If they say they want to remember something, restate the item you would store \
-        and say it is not saved to review yet.
+        Chat turns persist on this device. Review items are saved on this device when \
+        the learner uses Remember or asks to remember something. If a review item was \
+        just saved, you will be told — confirm it in one short line. Do not claim you \
+        cannot save.
         """
     }
 }
@@ -74,6 +80,19 @@ struct StubLLMService: LLMServicing {
             """
         }
         let reply = "Offline stub — no API key yet.\n\n\(body)"
+        return Self.chunked(reply)
+    }
+
+    func complete(messages: [Message], settings: LLMRequestSettings) async throws -> String {
+        var text = ""
+        for try await chunk in stream(messages: messages, settings: settings) {
+            text += chunk
+        }
+        if text.isEmpty { throw LLMError.emptyResponse }
+        return text
+    }
+
+    private static func chunked(_ reply: String) -> AsyncThrowingStream<String, Error> {
         return AsyncThrowingStream { continuation in
             let task = Task {
                 do {
@@ -116,6 +135,34 @@ struct OpenAICompatibleLLMService: LLMServicing {
         }
     }
 
+    func complete(messages: [Message], settings: LLMRequestSettings) async throws -> String {
+        guard let url = Self.endpoint(from: settings.apiBaseURL) else {
+            throw LLMError.invalidBaseURL
+        }
+
+        var request = URLRequest(url: url)
+        request.httpMethod = "POST"
+        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        request.setValue("Bearer \(settings.apiKey)", forHTTPHeaderField: "Authorization")
+        request.timeoutInterval = 60
+        request.httpBody = try JSONEncoder().encode(
+            ChatCompletionRequest(model: settings.model, messages: Self.payload(messages, settings: settings), stream: false)
+        )
+
+        let (data, response) = try await session.data(for: request)
+        let status = (response as? HTTPURLResponse)?.statusCode ?? 0
+        guard (200...299).contains(status) else {
+            let body = String(data: data, encoding: .utf8) ?? ""
+            throw LLMError.http(status: status, body: body)
+        }
+
+        let decoded = try JSONDecoder().decode(ChatCompletionResponse.self, from: data)
+        guard let text = decoded.choices.first?.message.content, !text.isEmpty else {
+            throw LLMError.emptyResponse
+        }
+        return text
+    }
+
     private func write(
         messages: [Message],
         settings: LLMRequestSettings,
@@ -133,10 +180,7 @@ struct OpenAICompatibleLLMService: LLMServicing {
 
         let payload = ChatCompletionRequest(
             model: settings.model,
-            messages: [.init(role: "system", content: settings.systemPrompt)]
-                + messages
-                .filter { $0.role != .system }
-                .map { .init(role: $0.role.rawValue, content: $0.content) },
+            messages: Self.payload(messages, settings: settings),
             stream: true
         )
         request.httpBody = try JSONEncoder().encode(payload)
@@ -169,6 +213,23 @@ struct OpenAICompatibleLLMService: LLMServicing {
         if !received {
             throw LLMError.emptyResponse
         }
+    }
+
+    private static func payload(
+        _ messages: [Message],
+        settings: LLMRequestSettings
+    ) -> [ChatCompletionRequest.Message] {
+        var result = [ChatCompletionRequest.Message(
+            role: "system",
+            content: settings.systemOverride ?? settings.systemPrompt
+        )]
+        if !settings.extraInstruction.isEmpty {
+            result.append(.init(role: "system", content: settings.extraInstruction))
+        }
+        result += messages
+            .filter { $0.role != .system }
+            .map { .init(role: $0.role.rawValue, content: $0.content) }
+        return result
     }
 
     private static func ssePayload(from line: String) -> String? {
@@ -221,6 +282,18 @@ private struct ChatCompletionChunk: Decodable {
         }
 
         let delta: Delta
+    }
+
+    let choices: [Choice]
+}
+
+private struct ChatCompletionResponse: Decodable {
+    struct Choice: Decodable {
+        struct Message: Decodable {
+            let content: String?
+        }
+
+        let message: Message
     }
 
     let choices: [Choice]

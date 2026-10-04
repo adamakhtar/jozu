@@ -1,31 +1,22 @@
 # Status
 
-Last updated: 2026-10-04 (S3: Vision OCR on attached photos)
+Last updated: 2026-10-04 (S4/S5: remember + memories list)
 
 ## What exists
 
 - Native macOS SwiftUI app **Jozu**.
-- Chat UI, reply-language toggle, Settings (languages + OpenAI-compatible key in Keychain).
-- Streamed replies (stub or live SSE). One SwiftData thread. **Clear** deletes it.
-- Photo attach (file picker, drop, paste). Vision OCR on-device using native + target language hints. Editable reading. Thumbnail persisted; image is not sent to the model.
+- Chat, reply-language toggle, Settings, streamed replies, one persisted thread.
+- Photo attach / drop / paste → on-device Vision OCR. Image stays local.
+- Review items: Remember on a turn, or type “remember this”. Stored as word / sentence / grammar. **Memories** list, Due first. `nextReviewAt` is now (due immediately) until S6 grades.
 
 ## What does not exist
 
+- Review probe / LLM grading / reschedule
 - Multiple conversations
-- Review items / schedule / grading
 - Screen / other-app peek
 - Multimodal image upload to the LLM
-- iPhone target (views are mostly portable; Xcode target is macOS-only)
+- iPhone target
 
 ## Environment constraint
 
 Cloud agent host is Linux. GUI is unverified here.
-
-## Defaults (assumptions)
-
-| Setting | Value | Why |
-| --- | --- | --- |
-| Native language | English | Unspecified; easy to change |
-| Target language | Japanese | Repo name 上手 / jozu |
-| Model | `gpt-4o-mini` | Cheap default; override in Settings |
-| API base | `https://api.openai.com/v1` | Swap for Groq, Ollama, etc. |

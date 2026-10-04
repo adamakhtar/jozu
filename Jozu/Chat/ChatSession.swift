@@ -5,18 +5,24 @@ import Observation
 @Observable
 final class ChatSession {
     var messages: [Message] = []
+    var memories: [MemoryItem] = []
     var draft = ""
     var pendingPhoto: PendingPhoto?
     var isSending = false
+    var rememberingID: UUID?
     var errorMessage: String?
+    var notice: String?
 
     private let settings: AppSettings
     private let store: ChatStore
+    private let memoryStore: MemoryStore
 
-    init(settings: AppSettings, store: ChatStore) {
+    init(settings: AppSettings, store: ChatStore, memoryStore: MemoryStore) {
         self.settings = settings
         self.store = store
+        self.memoryStore = memoryStore
         self.messages = store.loadMessages()
+        self.memories = memoryStore.all()
     }
 
     var canSend: Bool {
@@ -28,6 +34,10 @@ final class ChatSession {
 
     var scrollAnchor: String {
         "\(messages.count)|\(messages.last?.content.count ?? 0)|\(isSending)|\(pendingPhoto != nil)"
+    }
+
+    func isSaved(messageID: UUID) -> Bool {
+        memories.contains { $0.sourceMessageID == messageID }
     }
 
     func attachImage(data: Data) async {
@@ -64,6 +74,29 @@ final class ChatSession {
         pendingPhoto = nil
     }
 
+    func remember(from assistant: Message) async {
+        errorMessage = nil
+        if isSaved(messageID: assistant.id) {
+            notice = "Already saved from this turn."
+            return
+        }
+
+        rememberingID = assistant.id
+        defer { rememberingID = nil }
+
+        let user = precedingUser(before: assistant)
+        await saveMemory(user: user?.content ?? "", assistant: assistant.content, source: assistant.id)
+    }
+
+    func deleteMemory(_ id: UUID) {
+        do {
+            try memoryStore.delete(id)
+            memories = memoryStore.all()
+        } catch {
+            errorMessage = error.localizedDescription
+        }
+    }
+
     func send() async {
         let question = draft.trimmingCharacters(in: .whitespacesAndNewlines)
         guard canSend else { return }
@@ -72,6 +105,7 @@ final class ChatSession {
         draft = ""
         pendingPhoto = nil
         errorMessage = nil
+        notice = nil
 
         let user = Message(
             role: .user,
@@ -82,13 +116,29 @@ final class ChatSession {
         messages.append(user)
         persist(user)
 
+        var request = LLMRequestSettings(settings)
+        if RememberIntent.matches(question) {
+            let saved: MemoryItem?
+            if let lastAssistant = lastAssistant() {
+                saved = await saveMemory(
+                    user: question,
+                    assistant: lastAssistant.content,
+                    source: lastAssistant.id
+                )
+            } else {
+                saved = await saveMemory(user: question, assistant: "", source: user.id)
+            }
+            if let saved {
+                request.extraInstruction = "A review item was just saved: [\(saved.kind.label)] \(saved.target) — \(saved.note). Confirm in one short line."
+            }
+        }
+
         let outbound = messages
         var assistant = Message(role: .assistant, content: "")
         messages.append(assistant)
         isSending = true
         defer { isSending = false }
 
-        let request = LLMRequestSettings(settings)
         let client = LLMServiceFactory.make(hasAPIKey: settings.hasAPIKey)
 
         do {
@@ -122,9 +172,45 @@ final class ChatSession {
             messages = []
             pendingPhoto = nil
             errorMessage = nil
+            notice = nil
         } catch {
             errorMessage = error.localizedDescription
         }
+    }
+
+    @discardableResult
+    private func saveMemory(user: String, assistant: String, source: UUID) async -> MemoryItem? {
+        if isSaved(messageID: source) {
+            notice = "Already saved from this turn."
+            return memories.first { $0.sourceMessageID == source }
+        }
+
+        let request = LLMRequestSettings(settings)
+        let client = LLMServiceFactory.make(hasAPIKey: settings.hasAPIKey)
+        do {
+            let draft = try await MemoryExtractor.extract(
+                user: user,
+                assistant: assistant,
+                settings: request,
+                client: client
+            )
+            let item = try memoryStore.insert(draft, sourceMessageID: source)
+            memories = memoryStore.all()
+            notice = "Saved \(item.kind.label.lowercased()): \(item.target)"
+            return item
+        } catch {
+            errorMessage = "Could not save that: \(error.localizedDescription)"
+            return nil
+        }
+    }
+
+    private func lastAssistant() -> Message? {
+        messages.last(where: { $0.role == .assistant && !$0.content.isEmpty })
+    }
+
+    private func precedingUser(before message: Message) -> Message? {
+        guard let index = messages.firstIndex(where: { $0.id == message.id }) else { return nil }
+        return messages[..<index].last(where: { $0.role == .user })
     }
 
     private static func compose(question: String, ocr: String?) -> String {
