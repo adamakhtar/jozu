@@ -1,6 +1,6 @@
 # Status
 
-Last updated: 2026-10-04 (build fix: explicit returns in LLMError / ReplyLanguage switches)
+Last updated: 2026-10-04 (composer text: force light scheme + darker ink)
 
 ## What exists
 
