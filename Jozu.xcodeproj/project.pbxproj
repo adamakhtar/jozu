@@ -17,6 +17,8 @@
 		A11A00000000000000002008 /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A11A00000000000000001008 /* SettingsView.swift */; };
 		A11A00000000000000002009 /* KeychainStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = A11A00000000000000001009 /* KeychainStore.swift */; };
 		A11A0000000000000000200A /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = A11A0000000000000000100A /* Assets.xcassets */; };
+		A11A0000000000000000200B /* StoredModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = A11A0000000000000000100C /* StoredModels.swift */; };
+		A11A0000000000000000200C /* ChatStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = A11A0000000000000000100D /* ChatStore.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -32,6 +34,8 @@
 		A11A00000000000000001009 /* KeychainStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KeychainStore.swift; sourceTree = "<group>"; };
 		A11A0000000000000000100A /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		A11A0000000000000000100B /* Jozu.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = Jozu.entitlements; sourceTree = "<group>"; };
+		A11A0000000000000000100C /* StoredModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StoredModels.swift; sourceTree = "<group>"; };
+		A11A0000000000000000100D /* ChatStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChatStore.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -70,6 +74,7 @@
 				A11A0000000000000000000B /* LLM */,
 				A11A0000000000000000000C /* Settings */,
 				A11A0000000000000000000D /* Support */,
+				A11A0000000000000000000E /* Persistence */,
 				A11A0000000000000000100A /* Assets.xcassets */,
 				A11A0000000000000000100B /* Jozu.entitlements */,
 			);
@@ -109,6 +114,15 @@
 				A11A00000000000000001009 /* KeychainStore.swift */,
 			);
 			path = Support;
+			sourceTree = "<group>";
+		};
+		A11A0000000000000000000E /* Persistence */ = {
+			isa = PBXGroup;
+			children = (
+				A11A0000000000000000100C /* StoredModels.swift */,
+				A11A0000000000000000100D /* ChatStore.swift */,
+			);
+			path = Persistence;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -189,6 +203,8 @@
 				A11A00000000000000002007 /* AppSettings.swift in Sources */,
 				A11A00000000000000002008 /* SettingsView.swift in Sources */,
 				A11A00000000000000002009 /* KeychainStore.swift in Sources */,
+				A11A0000000000000000200B /* StoredModels.swift in Sources */,
+				A11A0000000000000000200C /* ChatStore.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

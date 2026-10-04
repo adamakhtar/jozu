@@ -2,6 +2,12 @@
 
 Append-only. Newest first. Supersede; do not rewrite history.
 
+## 2026-10-04 — One SwiftData thread, streamed tokens
+
+**Choice:** `StoredConversation` / `StoredMessage` on disk via SwiftData. One conversation. User/assistant turns saved after they complete (user immediately, assistant when the stream finishes). LLM path is `stream` only (SSE `chat/completions`). Stub also chunks so the loop is visible without a key.
+
+**Why:** Quit/reopen is the first real product test. Streaming is how a live tutor feels. Multiple threads wait until one thread is boringly solid.
+
 ## 2026-10-04 — Slice 0 stack
 
 **Choice:** Native Swift + SwiftUI, macOS 14+, local-first. Shared UI patterns kept iOS-safe. No JS shell.
