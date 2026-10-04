@@ -24,8 +24,8 @@ struct LLMRequestSettings: Sendable {
 
     var replyLanguageName: String {
         switch replyLanguage {
-        case .native: nativeLanguage
-        case .target: targetLanguage
+        case .native: return nativeLanguage
+        case .target: return targetLanguage
         }
     }
 
@@ -127,9 +127,9 @@ enum LLMError: LocalizedError {
     var errorDescription: String? {
         switch self {
         case .invalidBaseURL:
-            "API base URL is invalid."
+            return "API base URL is invalid."
         case .emptyResponse:
-            "The model returned an empty reply."
+            return "The model returned an empty reply."
         case .http(let status, let body):
             let snippet = body.trimmingCharacters(in: .whitespacesAndNewlines)
             if snippet.isEmpty { return "The model request failed (\(status))." }

@@ -9,8 +9,8 @@ enum ReplyLanguage: String, CaseIterable, Identifiable, Sendable {
 
     var label: String {
         switch self {
-        case .native: "Native language"
-        case .target: "Target language"
+        case .native: return "Native language"
+        case .target: return "Target language"
         }
     }
 }
@@ -89,8 +89,8 @@ final class AppSettings {
 
     func replyLanguageName() -> String {
         switch replyLanguage {
-        case .native: nativeLanguage
-        case .target: targetLanguage
+        case .native: return nativeLanguage
+        case .target: return targetLanguage
         }
     }
 }
