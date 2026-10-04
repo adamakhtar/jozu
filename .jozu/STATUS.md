@@ -1,6 +1,6 @@
 # Status
 
-Last updated: 2026-10-04
+Last updated: 2026-10-04 (build fix: explicit returns in LLMError / ReplyLanguage switches)
 
 ## What exists
 
