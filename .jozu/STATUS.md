@@ -1,30 +1,26 @@
 # Status
 
-Last updated: 2026-10-04 (composer text: force light scheme + darker ink)
+Last updated: 2026-10-04 (S1/S2: persist one thread + stream tokens)
 
 ## What exists
 
-- Empty-repo bootstrap: native macOS SwiftUI app named **Jozu**.
-- Chat UI (user / assistant bubbles, composer, Cmd-Return to send).
-- Reply in **native** or **target** language (session toggle + Settings).
-- `LLMServicing` protocol:
-  - `StubLLMService` if no API key
-  - `OpenAICompatibleLLMService` if a key is present (any OpenAI-compatible base URL)
-- Settings: native language, target language, model, base URL, API key (Keychain).
-- App sandbox + outbound network client entitlement.
+- Native macOS SwiftUI app **Jozu**.
+- Chat UI, reply-language toggle, Settings (languages + OpenAI-compatible key in Keychain).
+- `LLMServicing.stream`: stub chunks without a key; SSE from OpenAI-compatible hosts with a key.
+- SwiftData: one `StoredConversation` + `StoredMessage` rows. Relaunch restores the thread. **Clear** deletes it.
+- App sandbox + outbound network.
 
 ## What does not exist
 
-- Persistence of chats or review items
+- Multiple conversations
 - Photos / OCR
-- Review schedule
-- Answer grading
+- Review items / schedule / grading
 - Screen / other-app peek
-- iPhone target (code is mostly portable; the Xcode target is macOS-only)
+- iPhone target (views are mostly portable; Xcode target is macOS-only)
 
 ## Environment constraint
 
-Cloud agent host is Linux. No Xcode, no Simulator, no self-hosted Mac worker. GUI is unverified until someone runs it on a Mac.
+Cloud agent host is Linux. GUI is unverified here.
 
 ## Defaults (assumptions)
 

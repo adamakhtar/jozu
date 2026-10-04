@@ -4,12 +4,13 @@ Ordered. Only the top item is “now” unless a conversation explicitly pulls s
 
 ## Now
 
-- [ ] **S0 verify** — Open `Jozu.xcodeproj` on a Mac, run Jozu, send a stub message, open Settings.
+- [ ] **S1/S2 verify** — Pull, run, send a stub (watch it stream), quit, reopen, confirm the thread is back. Optional: paste an API key.
 
 ## Up next
 
-- [ ] **S1 live tutor** — Confirm a real key works. Tighten the system prompt. Stream tokens if the first live call feels slow.
-- [ ] **S2 persist chats** — SwiftData (or a thin SQLite store) for threads. One thread is fine at first.
+- [x] **S0 verify** — Mac window runs; composer ink fixed.
+- [x] **S1 live tutor** — Streamed replies; tighter prompt. Live key still optional.
+- [x] **S2 persist chats** — SwiftData, one thread, Clear.
 - [ ] **S3 photo + OCR** — Attach image → Vision recognize → include text (and optionally the image) in the next turn.
 - [ ] **S4 remember** — Chat tool / confirmation that stores a `MemoryItem` (word / sentence / grammar, source turn, notes).
 - [ ] **S5 review list** — Browse items. Due drip. Not a grade session yet.

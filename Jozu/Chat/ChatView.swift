@@ -1,7 +1,9 @@
+import SwiftData
 import SwiftUI
 
 struct ChatView: View {
     @Environment(AppSettings.self) private var settings
+    @Environment(\.modelContext) private var modelContext
     @State private var session: ChatSession?
     @State private var showingSettings = false
     @FocusState private var composerFocused: Bool
@@ -21,7 +23,7 @@ struct ChatView: View {
         .tint(JozuTheme.ink)
         .onAppear {
             if session == nil {
-                session = ChatSession(settings: settings)
+                session = ChatSession(settings: settings, store: ChatStore(context: modelContext))
             }
             composerFocused = true
         }
@@ -53,6 +55,13 @@ struct ChatView: View {
             .frame(maxWidth: 260)
             .help("Language the tutor replies in")
 
+            Button("Clear") {
+                session?.clear()
+            }
+            .buttonStyle(.borderless)
+            .disabled(session?.messages.isEmpty ?? true || session?.isSending == true)
+            .help("Delete this thread from this Mac")
+
             Button {
                 showingSettings = true
             } label: {
@@ -80,24 +89,13 @@ struct ChatView: View {
                             MessageBubble(message: message)
                                 .id(message.id)
                         }
-
-                        if session.isSending {
-                            ProgressView()
-                                .controlSize(.small)
-                                .padding(.leading, 8)
-                                .id("pending")
-                        }
                     }
                     .padding(20)
                 }
-                .onChange(of: session.messages.count) {
-                    let anchor = session.messages.last?.id
-                    withAnimation(.easeOut(duration: 0.2)) {
-                        if let anchor {
-                            proxy.scrollTo(anchor, anchor: .bottom)
-                        } else {
-                            proxy.scrollTo("pending", anchor: .bottom)
-                        }
+                .onChange(of: session.scrollAnchor) {
+                    guard let anchor = session.messages.last?.id else { return }
+                    withAnimation(.easeOut(duration: 0.15)) {
+                        proxy.scrollTo(anchor, anchor: .bottom)
                     }
                 }
             }
@@ -111,7 +109,7 @@ struct ChatView: View {
             Text("Ask about a word, a sentence, or how to say something.")
                 .font(.system(size: 16, design: .serif))
                 .foregroundStyle(JozuTheme.ink)
-            Text("Photos, memory, and review come next. This window is the loop.")
+            Text("This thread stays on this Mac. Photos, memory, and review come next.")
                 .font(.system(size: 13))
                 .foregroundStyle(JozuTheme.muted)
         }
@@ -161,7 +159,7 @@ struct ChatView: View {
                 .disabled(!(session?.canSend ?? false))
             }
 
-            Text(settings.hasAPIKey ? "⌘↩ to send" : "No API key — replies are stubbed. ⌘↩ to send.")
+            Text(settings.hasAPIKey ? "⌘↩ to send. Saved on this Mac." : "No API key — replies are stubbed. Saved on this Mac. ⌘↩ to send.")
                 .font(.system(size: 11))
                 .foregroundStyle(JozuTheme.muted)
         }
@@ -184,10 +182,17 @@ private struct MessageBubble: View {
         HStack {
             if message.role == .user { Spacer(minLength: 80) }
 
-            Text(message.content)
-                .font(.system(size: 14))
-                .foregroundStyle(message.role == .user ? JozuTheme.userInk : JozuTheme.ink)
-                .textSelection(.enabled)
+            Group {
+                if message.content.isEmpty {
+                    ProgressView()
+                        .controlSize(.small)
+                } else {
+                    Text(message.content)
+                        .font(.system(size: 14))
+                        .foregroundStyle(message.role == .user ? JozuTheme.userInk : JozuTheme.ink)
+                        .textSelection(.enabled)
+                }
+            }
                 .padding(.horizontal, 12)
                 .padding(.vertical, 9)
                 .background(message.role == .user ? JozuTheme.vermillion : JozuTheme.card)
@@ -205,5 +210,6 @@ private struct MessageBubble: View {
 #Preview {
     ChatView()
         .environment(AppSettings.load())
+        .modelContainer(Persistence.makeContainer(inMemory: true))
         .frame(width: 720, height: 800)
 }
