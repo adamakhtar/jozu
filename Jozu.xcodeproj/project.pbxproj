@@ -24,6 +24,10 @@
 		A11A0000000000000000200F /* MemoryStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = A11A00000000000000001010 /* MemoryStore.swift */; };
 		A11A00000000000000002010 /* MemoryExtractor.swift in Sources */ = {isa = PBXBuildFile; fileRef = A11A00000000000000001011 /* MemoryExtractor.swift */; };
 		A11A00000000000000002011 /* MemoryListView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A11A00000000000000001012 /* MemoryListView.swift */; };
+		A11A00000000000000002012 /* ReviewModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = A11A00000000000000001013 /* ReviewModels.swift */; };
+		A11A00000000000000002013 /* ReviewEngine.swift in Sources */ = {isa = PBXBuildFile; fileRef = A11A00000000000000001014 /* ReviewEngine.swift */; };
+		A11A00000000000000002014 /* ReviewSession.swift in Sources */ = {isa = PBXBuildFile; fileRef = A11A00000000000000001015 /* ReviewSession.swift */; };
+		A11A00000000000000002015 /* ReviewView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A11A00000000000000001016 /* ReviewView.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -46,6 +50,10 @@
 		A11A00000000000000001010 /* MemoryStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MemoryStore.swift; sourceTree = "<group>"; };
 		A11A00000000000000001011 /* MemoryExtractor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MemoryExtractor.swift; sourceTree = "<group>"; };
 		A11A00000000000000001012 /* MemoryListView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MemoryListView.swift; sourceTree = "<group>"; };
+		A11A00000000000000001013 /* ReviewModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReviewModels.swift; sourceTree = "<group>"; };
+		A11A00000000000000001014 /* ReviewEngine.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReviewEngine.swift; sourceTree = "<group>"; };
+		A11A00000000000000001015 /* ReviewSession.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReviewSession.swift; sourceTree = "<group>"; };
+		A11A00000000000000001016 /* ReviewView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReviewView.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -152,6 +160,10 @@
 				A11A00000000000000001010 /* MemoryStore.swift */,
 				A11A00000000000000001011 /* MemoryExtractor.swift */,
 				A11A00000000000000001012 /* MemoryListView.swift */,
+				A11A00000000000000001013 /* ReviewModels.swift */,
+				A11A00000000000000001014 /* ReviewEngine.swift */,
+				A11A00000000000000001015 /* ReviewSession.swift */,
+				A11A00000000000000001016 /* ReviewView.swift */,
 			);
 			path = Memory;
 			sourceTree = "<group>";
@@ -241,6 +253,10 @@
 				A11A0000000000000000200F /* MemoryStore.swift in Sources */,
 				A11A00000000000000002010 /* MemoryExtractor.swift in Sources */,
 				A11A00000000000000002011 /* MemoryListView.swift in Sources */,
+				A11A00000000000000002012 /* ReviewModels.swift in Sources */,
+				A11A00000000000000002013 /* ReviewEngine.swift in Sources */,
+				A11A00000000000000002014 /* ReviewSession.swift in Sources */,
+				A11A00000000000000002015 /* ReviewView.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

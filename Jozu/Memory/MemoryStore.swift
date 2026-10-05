@@ -38,12 +38,25 @@ final class MemoryStore {
     }
 
     func delete(_ id: UUID) throws {
+        guard let stored = try fetch(id) else { return }
+        context.delete(stored)
+        try context.save()
+    }
+
+    @discardableResult
+    func schedule(_ id: UUID, intervalDays: Int, nextReviewAt: Date) throws -> MemoryItem {
+        guard let stored = try fetch(id) else { throw ReviewError.missingItem }
+        stored.intervalDays = intervalDays
+        stored.nextReviewAt = nextReviewAt
+        try context.save()
+        return stored.asItem()
+    }
+
+    private func fetch(_ id: UUID) throws -> StoredMemory? {
         var descriptor = FetchDescriptor<StoredMemory>(
             predicate: #Predicate { $0.id == id }
         )
         descriptor.fetchLimit = 1
-        guard let stored = try context.fetch(descriptor).first else { return }
-        context.delete(stored)
-        try context.save()
+        return try context.fetch(descriptor).first
     }
 }

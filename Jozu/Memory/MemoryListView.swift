@@ -3,6 +3,7 @@ import SwiftUI
 struct MemoryListView: View {
     let items: [MemoryItem]
     var onDelete: (UUID) -> Void
+    var onReview: (UUID) -> Void
 
     var body: some View {
         let due = items.filter(\.isDue)
@@ -42,7 +43,15 @@ struct MemoryListView: View {
                 Text(item.kind.label.uppercased())
                     .font(.system(size: 10, weight: .semibold))
                     .foregroundStyle(JozuTheme.vermillion)
+                Text(item.scheduleCaption)
+                    .font(.system(size: 10))
+                    .foregroundStyle(JozuTheme.muted)
                 Spacer()
+                Button("Review") {
+                    onReview(item.id)
+                }
+                .buttonStyle(.borderless)
+                .help("Ask a probe and grade your answer")
                 Button(role: .destructive) {
                     onDelete(item.id)
                 } label: {

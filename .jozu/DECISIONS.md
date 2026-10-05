@@ -2,6 +2,12 @@
 
 Append-only. Newest first. Supersede; do not rewrite history.
 
+## 2026-10-05 — Review probe is LLM JSON + coarse drip
+
+**Choice:** Due items (header **Review**, Memories **Review due**, or a row) open a probe session, not a chat turn. LLM writes `{"question"}`. Learner answers. LLM returns `{"grade","reason","next_hint"}` with miss / partial / pass / easy. Those map to 1 / 2 / 7 / 14 days and `nextReviewAt`. No key: stub question from the item, stub grade from length / whether the target appears. Skip leaves the item due. Not SM-2. Not BLEU.
+
+**Why:** Matches the 2026-10-04 drip + LLM-as-judge decisions. Exact intervals were open; this is the working table until a later decision replaces it.
+
 ## 2026-10-04 — Remember is local extract + list
 
 **Choice:** Assistant **Remember** button, or a “remember this / 覚えて” user turn. Extract one `{kind, target, note}` via LLM JSON when a key exists; otherwise a heuristic. Persist `StoredMemory` with `nextReviewAt = now`. Memories sheet, Due first. Clear chat does not delete memories. No probe/grade yet.

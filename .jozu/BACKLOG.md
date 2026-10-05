@@ -4,7 +4,7 @@ Ordered. Only the top item is “now” unless a conversation explicitly pulls s
 
 ## Now
 
-- [ ] **S4/S5 verify** — Remember a turn (button or “remember this”), open Memories, quit/reopen, item still there.
+- [ ] **S6 verify** — Remember a turn, Review due, answer the probe, item moves to Later with a new `nextReviewAt`.
 
 ## Up next
 
@@ -14,7 +14,7 @@ Ordered. Only the top item is “now” unless a conversation explicitly pulls s
 - [x] **S3 photo + OCR** — Attach / drop / paste → Vision → editable text in the turn. Image stays on-device.
 - [x] **S4 remember** — Remember button + “remember this”. Word / sentence / grammar.
 - [x] **S5 review list** — Memories sheet. Due first. No grade session yet.
-- [ ] **S6 review probe** — LLM writes a question, user answers, LLM grades, interval updates.
+- [x] **S6 review probe** — LLM writes a question, user answers, LLM grades, interval updates.
 - [ ] **S7 Mac peek** — Selected text from a user-chosen app via Accessibility. Explicit allowlist.
 
 ## Later

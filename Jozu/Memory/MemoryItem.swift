@@ -27,6 +27,13 @@ struct MemoryItem: Identifiable, Hashable, Sendable {
     var isDue: Bool {
         nextReviewAt <= Date()
     }
+
+    var scheduleCaption: String {
+        if isDue { return "Due now" }
+        let formatter = RelativeDateTimeFormatter()
+        formatter.unitsStyle = .full
+        return formatter.localizedString(for: nextReviewAt, relativeTo: Date())
+    }
 }
 
 struct MemoryDraft: Sendable {

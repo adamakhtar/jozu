@@ -8,7 +8,7 @@ Questions that are open. Defaults in `STATUS.md` are in force until answered.
 2. **“Jev”** — Unclear. Proceeding with LLM-as-judge. If this was BLEU, Jaccard, or a specific eval product, say so.
 3. **Provider** — OpenAI-compatible is wired. Which host and model will you actually use?
 4. **Memory trigger** — Free-text “remember this”, a button, or both?
-5. **Review cadence** — How many items/day? Miss → tomorrow, pass → ~a week is the working guess.
+5. **Review cadence** — S6 shipped miss → 1 day, partial → 2, pass → 7, easy → 14. Still open if you want different numbers.
 6. **Peek UX** — Menu “use frontmost app”, always-on allowlist, or per-turn grant?
 7. **Data** — Local-only forever, or iCloud later?
 8. **Name / tone** — Jozu (上手) from the repo. Keep?

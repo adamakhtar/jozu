@@ -2,23 +2,22 @@
 
 Read this first in a new conversation. Then `STATUS.md`.
 
-Updated: 2026-10-04
+Updated: 2026-10-05
 Branch: `cursor/persist-stream-1eb4`
-Slice: 4/5 — remember + memories list
+Slice: 6 — review probe
 
 ## Now
 
-S4/S5 is on this branch. **Remember** on an assistant turn (or type “remember this”) stores a word/sentence/grammar item. **Memories** lists them. Due items sit at the top. No grading yet.
+S6 is on this branch (PR #2). Due memories open a probe: LLM writes a question, you answer, it grades miss/partial/pass/easy, `nextReviewAt` moves by 1/2/7/14 days. Stub probe/grade if there is no key.
 
-Pull `cursor/persist-stream-1eb4`, ⌘R. Ask something, Remember, open Memories. Stub is enough (heuristic extract). With a key, extract is JSON from the model.
+Pull `cursor/persist-stream-1eb4`, ⌘R. Remember a turn, open **Review** (or Memories → Review due), answer, confirm it lands under Later.
 
 This Linux agent cannot compile or launch the app.
 
 ## Next (do in this order)
 
-1. Confirm Remember + Memories on a Mac.
-2. Review probe: LLM writes a question, user answers, LLM grades, `nextReviewAt` updates.
-3. Mac-only scoped peek at another app (AX selected text first, never full desktop).
+1. Confirm Remember + Review on a Mac (stub is enough; live key grades for real).
+2. Mac-only scoped peek at another app (AX selected text first, never full desktop).
 
 ## Do not
 
@@ -32,6 +31,6 @@ This Linux agent cannot compile or launch the app.
 
 ## Blocked on the user
 
-- LLM provider + API key when they want live answers / better extract.
+- LLM provider + API key when they want live answers / better extract / real grades.
 - Confirmation of native / target language defaults (currently English → Japanese).
 - What “Jev” meant for scoring.

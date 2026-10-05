@@ -25,11 +25,34 @@ final class ChatSession {
         self.memories = memoryStore.all()
     }
 
+    var dueCount: Int {
+        memories.filter(\.isDue).count
+    }
+
     var canSend: Bool {
         guard !isSending else { return false }
         if pendingPhoto?.isRecognizing == true { return false }
         let hasText = !draft.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
         return hasText || pendingPhoto != nil
+    }
+
+    private func reviewQueue(startingAt itemID: UUID?) -> [MemoryItem] {
+        let due = memories.filter(\.isDue).sorted { $0.nextReviewAt < $1.nextReviewAt }
+        if let itemID {
+            guard let item = memories.first(where: { $0.id == itemID }) else { return due }
+            return [item] + due.filter { $0.id != itemID }
+        }
+        return due
+    }
+
+    func makeReviewSession(startingAt itemID: UUID?) -> ReviewSession? {
+        let queue = reviewQueue(startingAt: itemID)
+        guard !queue.isEmpty else { return nil }
+        return ReviewSession(queue: queue, settings: settings, memoryStore: memoryStore)
+    }
+
+    func refreshMemories() {
+        memories = memoryStore.all()
     }
 
     var scrollAnchor: String {

@@ -9,6 +9,7 @@ Settings → add an OpenAI-compatible key when you want live answers.
 The current thread is saved on this Mac (Clear deletes it).
 Attach, drop, or paste a photo of text — Vision reads it on-device.
 Remember a turn (or type “remember this”) to save a review item. Memories lists them.
+Due items can be reviewed: the model writes a probe, grades your answer, and reschedules.
 
 ## Project memory
 

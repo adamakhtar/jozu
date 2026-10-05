@@ -14,6 +14,7 @@ struct ChatView: View {
     @State private var session: ChatSession?
     @State private var showingSettings = false
     @State private var showingMemories = false
+    @State private var startDueReview = false
     @State private var importingPhoto = false
     @FocusState private var composerFocused: Bool
 
@@ -45,13 +46,14 @@ struct ChatView: View {
                 .environment(settings)
                 .frame(minWidth: 440, minHeight: 400)
         }
-        .sheet(isPresented: $showingMemories) {
-            NavigationStack {
-                MemoryListView(items: session?.memories ?? []) { id in
-                    session?.deleteMemory(id)
-                }
+        .sheet(isPresented: $showingMemories, onDismiss: {
+            startDueReview = false
+            session?.refreshMemories()
+        }) {
+            if let session {
+                MemorySheetView(session: session, startDue: startDueReview)
+                    .frame(minWidth: 440, minHeight: 520)
             }
-            .frame(minWidth: 420, minHeight: 480)
         }
         .fileImporter(
             isPresented: $importingPhoto,
@@ -95,7 +97,17 @@ struct ChatView: View {
             .frame(maxWidth: 260)
             .help("Language the tutor replies in")
 
+            if let due = session?.dueCount, due > 0 {
+                Button("Review (\(due))") {
+                    startDueReview = true
+                    showingMemories = true
+                }
+                .buttonStyle(.borderless)
+                .help("Due review items")
+            }
+
             Button {
+                startDueReview = false
                 showingMemories = true
             } label: {
                 Text(session.map { "Memories (\($0.memories.count))" } ?? "Memories")
@@ -170,7 +182,7 @@ struct ChatView: View {
             Text("Ask about a word, a sentence, or a photo of text.")
                 .font(.system(size: 16, design: .serif))
                 .foregroundStyle(JozuTheme.ink)
-            Text("Photos are read on this Mac. Remember a turn to save it for later.")
+            Text("Photos are read on this Mac. Remember a turn, then Review when it’s due.")
                 .font(.system(size: 13))
                 .foregroundStyle(JozuTheme.muted)
         }
@@ -293,9 +305,9 @@ struct ChatView: View {
 
     private var footerHint: String {
         if settings.hasAPIKey {
-            return "⌘↩ to send. Remember a turn, or type “remember this”."
+            return "⌘↩ to send. Remember a turn, then Review from Memories."
         }
-        return "No API key — replies are stubbed. Remember still saves on this Mac."
+        return "No API key — chat, remember, and review are stubbed on this Mac."
     }
 
     private var draftBinding: Binding<String> {
