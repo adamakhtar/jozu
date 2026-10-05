@@ -1,21 +1,24 @@
 # Status
 
-Last updated: 2026-10-05 (API key: data-protection keychain, no login-keychain prompt)
+Last updated: 2026-10-05 (S8 Lessons locked in docs, not built)
 
 ## What exists
 
 - Native macOS SwiftUI app **Jozu**.
 - Chat, reply-language toggle, Settings, streamed replies, one persisted thread. API key in the data-protection keychain (Application Support fallback).
 - Photo attach / drop / paste → on-device Vision OCR. Image stays local.
-- Review items: Remember on a turn, or type “remember this”. Stored as word / sentence / grammar.
-- **Memories** list (Due first). **Review** writes a probe, grades the answer, sets `nextReviewAt`.
+- Review **crumbs**: Remember → `{kind, target, note}`. Memories + Review are **sheets**. Probe + coarse `nextReviewAt`. Stub tutor if no key.
 
-## What does not exist
+## What does not exist (S8)
 
-- Multiple conversations
+- Lessons (structured guides per sense / grammar / nuance)
+- Full-screen Chat | Lessons
+- Candidate picker, library search
+- Lesson-scoped discuss + merge
+- LLM key gate (alert, no stub)
+- Parent Word → senses
 - Screen / other-app peek
-- Multimodal image upload to the LLM
-- SM-2 / FSRS
+- Multiple inbox threads
 - iPhone target
 
 ## Environment constraint
