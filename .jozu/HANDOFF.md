@@ -3,25 +3,24 @@
 Read this first in a new conversation. Then `STATUS.md`.
 
 Updated: 2026-10-05
-Branch: `cursor/persist-stream-1eb4`
-Slice: 6 — review probe
+Branch: `cursor/s8-lessons-7cbf`
+Slice: 8 — Lessons (first slice)
 
 ## Now
 
-S6 is on this branch (PR #2). Due memories open a probe: LLM writes a question, you answer, it grades miss/partial/pass/easy, `nextReviewAt` moves by 1/2/7/14 days. Stub probe/grade if there is no key.
+S8 first slice is on this branch. Chat | Lessons are full screens. Remember distills a stretch of chat into a structured lesson (word sense / grammar / nuance). Several candidates → picker. Search the library. Review probes that sense + struggle; the guide is hidden until after the grade. No API key / 401 blocks LLM and points at Settings. No stub tutor.
 
-Composer is a taller 16pt field. Return inserts a newline; ⌘↩ sends (chat) or checks (review). Mac composer uses an NSTextView so the caret sits inside the padding. The review answer stays visible through grading and the judgment.
+Discuss + merge (S8b) is not in this slice.
 
-API key no longer uses the login keychain, so rebuilds should not prompt. Paste the key once more in Settings after this pull.
-
-Pull `cursor/persist-stream-1eb4`, ⌘R. Remember a turn, open **Review** (or Memories → Review due), answer, confirm it lands under Later.
+Pull `cursor/s8-lessons-7cbf`, ⌘R, add a key, ask about a word, Remember, confirm the lesson, Review.
 
 This Linux agent cannot compile or launch the app.
 
 ## Next (do in this order)
 
-1. Confirm Remember + Review on a Mac (stub is enough; live key grades for real).
-2. Mac-only scoped peek at another app (AX selected text first, never full desktop).
+1. Confirm S8 on a Mac.
+2. S8b — Discuss this lesson + merge update.
+3. S7 Mac-only scoped peek.
 
 ## Do not
 
@@ -30,11 +29,13 @@ This Linux agent cannot compile or launch the app.
 - Implement full SRS / SuperMemo.
 - Capture the whole screen by default.
 - Treat BLEU / exact-match as the grader for open-ended production.
-- Add multiple conversations until one thread feels solid.
+- Add a parent Word→senses object yet (Later).
+- Inline-edit lesson body in v1.
+- Distill the entire mixed inbox into one lesson; picker if several topics.
 - Send the photo bytes to the model unless a later decision says multimodal is needed.
 
 ## Blocked on the user
 
-- LLM provider + API key when they want live answers / better extract / real grades.
+- LLM provider + API key (required).
 - Confirmation of native / target language defaults (currently English → Japanese).
 - What “Jev” meant for scoring.

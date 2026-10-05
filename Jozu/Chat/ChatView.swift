@@ -9,52 +9,19 @@ import UIKit
 #endif
 
 struct ChatView: View {
+    @Bindable var session: ChatSession
     @Environment(AppSettings.self) private var settings
-    @Environment(\.modelContext) private var modelContext
-    @State private var session: ChatSession?
-    @State private var showingSettings = false
-    @State private var showingMemories = false
-    @State private var startDueReview = false
     @State private var importingPhoto = false
     @FocusState private var composerFocused: Bool
 
     var body: some View {
-        @Bindable var settings = settings
-
         VStack(spacing: 0) {
-            header(replyLanguage: $settings.replyLanguage)
-            Divider().overlay(JozuTheme.line)
             transcript
             Divider().overlay(JozuTheme.line)
             composer
         }
         .background(JozuTheme.paper)
-        .preferredColorScheme(.light)
-        .tint(JozuTheme.ink)
-        .onAppear {
-            if session == nil {
-                session = ChatSession(
-                    settings: settings,
-                    store: ChatStore(context: modelContext),
-                    memoryStore: MemoryStore(context: modelContext)
-                )
-            }
-            composerFocused = true
-        }
-        .sheet(isPresented: $showingSettings) {
-            SettingsView()
-                .environment(settings)
-                .frame(minWidth: 440, minHeight: 400)
-        }
-        .sheet(isPresented: $showingMemories, onDismiss: {
-            startDueReview = false
-            session?.refreshMemories()
-        }) {
-            if let session {
-                MemorySheetView(session: session, startDue: startDueReview)
-                    .frame(minWidth: 440, minHeight: 520)
-            }
-        }
+        .onAppear { composerFocused = true }
         .fileImporter(
             isPresented: $importingPhoto,
             allowedContentTypes: [.image],
@@ -65,7 +32,7 @@ struct ChatView: View {
                 guard let url = urls.first else { return }
                 Task { await loadFile(url) }
             case .failure(let error):
-                session?.errorMessage = error.localizedDescription
+                session.errorMessage = error.localizedDescription
             }
         }
         .onDrop(of: [.image], isTargeted: nil, perform: importProviders)
@@ -76,113 +43,50 @@ struct ChatView: View {
         #endif
     }
 
-    private func header(replyLanguage: Binding<ReplyLanguage>) -> some View {
-        HStack(alignment: .firstTextBaseline, spacing: 16) {
-            VStack(alignment: .leading, spacing: 2) {
-                Text("Jozu")
-                    .font(.system(size: 22, weight: .semibold, design: .serif))
-                    .foregroundStyle(JozuTheme.ink)
-                Text("\(settings.targetLanguage) companion")
-                    .font(.system(size: 12))
-                    .foregroundStyle(JozuTheme.muted)
-            }
-
-            Spacer()
-
-            Picker("Reply in", selection: replyLanguage) {
-                Text(settings.nativeLanguage).tag(ReplyLanguage.native)
-                Text(settings.targetLanguage).tag(ReplyLanguage.target)
-            }
-            .pickerStyle(.segmented)
-            .frame(maxWidth: 260)
-            .help("Language the tutor replies in")
-
-            if let due = session?.dueCount, due > 0 {
-                Button("Review (\(due))") {
-                    startDueReview = true
-                    showingMemories = true
-                }
-                .buttonStyle(.borderless)
-                .help("Due review items")
-            }
-
-            Button {
-                startDueReview = false
-                showingMemories = true
-            } label: {
-                Text(session.map { "Memories (\($0.memories.count))" } ?? "Memories")
-            }
-            .buttonStyle(.borderless)
-            .help("Review items saved on this Mac")
-
-            Button("Clear") {
-                session?.clear()
-            }
-            .buttonStyle(.borderless)
-            .disabled(session?.messages.isEmpty ?? true || session?.isSending == true)
-            .help("Delete this thread from this Mac")
-
-            Button {
-                showingSettings = true
-            } label: {
-                Image(systemName: "gearshape")
-            }
-            .buttonStyle(.borderless)
-            .help("Settings")
-        }
-        .padding(.horizontal, 20)
-        .padding(.vertical, 14)
-    }
-
-    @ViewBuilder
     private var transcript: some View {
-        if let session {
-            ScrollViewReader { proxy in
-                ScrollView {
-                    LazyVStack(alignment: .leading, spacing: 14) {
-                        if session.messages.isEmpty {
-                            emptyState
-                                .padding(.top, 48)
-                        }
-
-                        if let notice = session.notice {
-                            Text(notice)
-                                .font(.system(size: 12))
-                                .foregroundStyle(JozuTheme.vermillion)
-                        }
-
-                        ForEach(session.messages) { message in
-                            MessageBubble(
-                                message: message,
-                                isRemembering: session.rememberingID == message.id,
-                                isSaved: session.isSaved(messageID: message.id),
-                                onRemember: {
-                                    Task { await session.remember(from: message) }
-                                }
-                            )
-                            .id(message.id)
-                        }
+        ScrollViewReader { proxy in
+            ScrollView {
+                LazyVStack(alignment: .leading, spacing: 14) {
+                    if session.messages.isEmpty {
+                        emptyState
+                            .padding(.top, 48)
                     }
-                    .padding(20)
+
+                    if let notice = session.notice {
+                        Text(notice)
+                            .font(.system(size: 12))
+                            .foregroundStyle(JozuTheme.vermillion)
+                    }
+
+                    ForEach(session.messages) { message in
+                        MessageBubble(
+                            message: message,
+                            isRemembering: session.rememberingID == message.id,
+                            isSaved: session.isSaved(messageID: message.id),
+                            onRemember: {
+                                Task { await session.remember(from: message) }
+                            }
+                        )
+                        .id(message.id)
+                    }
                 }
-                .onChange(of: session.scrollAnchor) {
-                    guard let anchor = session.messages.last?.id else { return }
-                    withAnimation(.easeOut(duration: 0.15)) {
-                        proxy.scrollTo(anchor, anchor: .bottom)
-                    }
+                .padding(20)
+            }
+            .onChange(of: session.scrollAnchor) {
+                guard let anchor = session.messages.last?.id else { return }
+                withAnimation(.easeOut(duration: 0.15)) {
+                    proxy.scrollTo(anchor, anchor: .bottom)
                 }
             }
-        } else {
-            Spacer()
         }
     }
 
     private var emptyState: some View {
         VStack(alignment: .leading, spacing: 10) {
-            Text("Ask about a word, a sentence, or a photo of text.")
+            Text("Ask about a word, a pattern, or a photo of text.")
                 .font(.system(size: 16, design: .serif))
                 .foregroundStyle(JozuTheme.ink)
-            Text("Photos are read on this Mac. Remember a turn, then Review when it’s due.")
+            Text("Remember a turn to save a lesson. Open Lessons to search and review.")
                 .font(.system(size: 13))
                 .foregroundStyle(JozuTheme.muted)
         }
@@ -191,20 +95,20 @@ struct ChatView: View {
 
     private var composer: some View {
         VStack(alignment: .leading, spacing: 8) {
-            if let error = session?.errorMessage {
+            if let error = session.errorMessage, session.needsSettings == false {
                 Text(error)
                     .font(.system(size: 12))
                     .foregroundStyle(JozuTheme.vermillion)
             }
 
-            if session?.pendingPhoto != nil {
+            if session.pendingPhoto != nil {
                 pendingPhotoRow
             }
 
             HStack(alignment: .bottom, spacing: 10) {
                 JozuComposerField(
-                    text: draftBinding,
-                    placeholder: session?.pendingPhoto == nil
+                    text: $session.draft,
+                    placeholder: session.pendingPhoto == nil
                         ? "Ask about \(settings.targetLanguage)…"
                         : "Ask about the photo, or send as-is…"
                 )
@@ -217,16 +121,16 @@ struct ChatView: View {
                 }
                 .buttonStyle(.borderless)
                 .help("Attach a photo of text")
-                .disabled(session?.isSending == true)
+                .disabled(session.isSending)
 
                 Button {
-                    Task { await session?.send() }
+                    Task { await session.send() }
                 } label: {
                     Text("Send")
                         .font(.system(size: 13, weight: .semibold))
                 }
                 .keyboardShortcut(.return, modifiers: .command)
-                .disabled(!(session?.canSend ?? false))
+                .disabled(!session.canSend)
             }
 
             Text(footerHint)
@@ -239,7 +143,7 @@ struct ChatView: View {
 
     private var pendingPhotoRow: some View {
         HStack(alignment: .top, spacing: 10) {
-            if let data = session?.pendingPhoto?.thumbnailJPEG, let image = PlatformImage.view(from: data) {
+            if let data = session.pendingPhoto?.thumbnailJPEG, let image = PlatformImage.view(from: data) {
                 image
                     .resizable()
                     .scaledToFill()
@@ -248,7 +152,7 @@ struct ChatView: View {
             }
 
             VStack(alignment: .leading, spacing: 4) {
-                if session?.pendingPhoto?.isRecognizing == true {
+                if session.pendingPhoto?.isRecognizing == true {
                     Text("Reading text…")
                         .font(.system(size: 12))
                         .foregroundStyle(JozuTheme.muted)
@@ -268,7 +172,7 @@ struct ChatView: View {
             }
 
             Button {
-                session?.discardPhoto()
+                session.discardPhoto()
             } label: {
                 Image(systemName: "xmark.circle.fill")
                     .foregroundStyle(JozuTheme.muted)
@@ -287,25 +191,18 @@ struct ChatView: View {
 
     private var footerHint: String {
         if settings.hasAPIKey {
-            return "Return for a new line, ⌘↩ to send. Remember a turn, then Review from Memories."
+            return "Return for a new line, ⌘↩ to send. Remember a turn to save a lesson."
         }
-        return "No API key — replies are stubbed. Return for a new line, ⌘↩ to send."
-    }
-
-    private var draftBinding: Binding<String> {
-        Binding(
-            get: { session?.draft ?? "" },
-            set: { session?.draft = $0 }
-        )
+        return "Add an API key in Settings to chat, save lessons, and review."
     }
 
     private var pendingOCRBinding: Binding<String> {
         Binding(
-            get: { session?.pendingPhoto?.ocrText ?? "" },
+            get: { session.pendingPhoto?.ocrText ?? "" },
             set: { text in
-                guard var photo = session?.pendingPhoto else { return }
+                guard var photo = session.pendingPhoto else { return }
                 photo.ocrText = text
-                session?.pendingPhoto = photo
+                session.pendingPhoto = photo
             }
         )
     }
@@ -318,7 +215,7 @@ struct ChatView: View {
         provider.loadDataRepresentation(for: .image) { data, _ in
             guard let data else { return }
             Task { @MainActor in
-                await session?.attachImage(data: data)
+                await session.attachImage(data: data)
             }
         }
         return true
@@ -331,9 +228,9 @@ struct ChatView: View {
         }
         do {
             let data = try Data(contentsOf: url)
-            await session?.attachImage(data: data)
+            await session.attachImage(data: data)
         } catch {
-            session?.errorMessage = error.localizedDescription
+            session.errorMessage = error.localizedDescription
         }
     }
 }
@@ -373,14 +270,14 @@ private struct MessageBubble: View {
                         if isRemembering {
                             ProgressView().controlSize(.small)
                         } else {
-                            Text(isSaved ? "Saved" : "Remember")
+                            Text(isSaved ? "Remember again" : "Remember")
                                 .font(.system(size: 11, weight: .semibold))
                         }
                     }
                     .buttonStyle(.borderless)
-                    .foregroundStyle(isSaved ? JozuTheme.muted : JozuTheme.vermillion)
-                    .disabled(isRemembering || isSaved)
-                    .help("Save a review item from this turn")
+                    .foregroundStyle(JozuTheme.vermillion)
+                    .disabled(isRemembering)
+                    .help("Save a lesson from this stretch of chat")
                 }
             }
             .padding(.horizontal, 12)
@@ -419,11 +316,4 @@ private enum PlatformImage {
         return UIImage(data: data).map { Image(uiImage: $0) }
         #endif
     }
-}
-
-#Preview {
-    ChatView()
-        .environment(AppSettings.load())
-        .modelContainer(Persistence.makeContainer(inMemory: true))
-        .frame(width: 720, height: 800)
 }

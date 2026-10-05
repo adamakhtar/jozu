@@ -2,6 +2,20 @@
 
 Append-only. Newest first. Supersede; do not rewrite history.
 
+## 2026-10-05 — Lessons replace memory crumbs
+
+**Choice:** The saved unit is a **lesson**: one usable distinction (one word-sense, one grammar use, or one nuance/contrast). Not a `{kind, target, note}` crumb. Remember distills a bounded stretch of chat into a structured guide. If several candidates are in that stretch, list them and the learner picks. Search the library. Chat | Lessons are full screens, not sheets. Settings may stay a sheet.
+
+**Review:** Probe that lesson’s sense. Lean on the conversation’s struggle (`focus`), not a generic gloss quiz. Learner does not see the guide while answering; the model that writes/grades does. After the grade, show the relevant bit.
+
+**Updates:** Chat-only in v1 (“Discuss” + merge). No inline edits. Lesson-scoped discuss + merge is the slice after the library exists.
+
+**Kinds now:** word sense | grammar | nuance. Parent `Word → senses` is Later.
+
+**No key / 401:** Block all LLM features (chat, save, review, update). Alert, point at Settings. No stub tutor.
+
+**Why:** Follow-ups are the product (“how does it differ from X”). A gloss cannot hold that. Sheets hide the material. Ad-hoc signing made a stub-without-key useful for the window; it is no longer the intended loop.
+
 ## 2026-10-05 — API key is data-protection keychain, not login-keychain ACL
 
 **Choice:** `kSecUseDataProtectionKeychain`. Never read the old login-keychain item (that dialog is an ACL on the binary’s code signature; “Always Allow” dies on the next ad-hoc ⌘R). If data-protection fails (no team / missing entitlement), store the key in the sandbox Application Support folder.

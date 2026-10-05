@@ -46,6 +46,10 @@ final class AppSettings {
         !apiKey.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
     }
 
+    func requireKey() throws {
+        if !hasAPIKey { throw LLMError.missingAPIKey }
+    }
+
     private let defaults: UserDefaults
 
     private enum Key {

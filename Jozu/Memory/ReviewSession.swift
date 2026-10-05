@@ -12,8 +12,8 @@ final class ReviewSession {
         case done
     }
 
-    private(set) var queue: [MemoryItem]
-    private(set) var current: MemoryItem?
+    private(set) var queue: [Lesson]
+    private(set) var current: Lesson?
     private(set) var question = ""
     var answer = ""
     private(set) var judgment: ReviewJudgment?
@@ -24,7 +24,7 @@ final class ReviewSession {
     private(set) var total: Int
 
     private let settings: AppSettings
-    private let memoryStore: MemoryStore
+    private let lessonStore: LessonStore
     private var cursor = 0
 
     var hasMore: Bool {
@@ -46,11 +46,11 @@ final class ReviewSession {
             && !isBusy
     }
 
-    init(queue: [MemoryItem], settings: AppSettings, memoryStore: MemoryStore) {
+    init(queue: [Lesson], settings: AppSettings, lessonStore: LessonStore) {
         self.queue = queue
         self.total = queue.count
         self.settings = settings
-        self.memoryStore = memoryStore
+        self.lessonStore = lessonStore
         self.current = queue.first
     }
 
@@ -63,22 +63,23 @@ final class ReviewSession {
     }
 
     func submit() async {
-        guard canSubmit, let item = current else { return }
+        guard canSubmit, let lesson = current else { return }
         errorMessage = nil
         phase = .grading
-        let request = LLMRequestSettings(settings)
-        let client = LLMServiceFactory.make(hasAPIKey: settings.hasAPIKey)
         do {
+            try settings.requireKey()
+            let request = LLMRequestSettings(settings)
+            let client = try LLMServiceFactory.make(hasAPIKey: settings.hasAPIKey)
             let judged = try await ReviewEngine.grade(
-                item: item,
+                lesson: lesson,
                 question: question,
                 answer: answer,
                 settings: request,
                 client: client
             )
             let planned = ReviewScheduler.apply(grade: judged.grade)
-            let updated = try memoryStore.schedule(
-                item.id,
+            let updated = try lessonStore.schedule(
+                lesson.id,
                 intervalDays: planned.intervalDays,
                 nextReviewAt: planned.nextReviewAt
             )
@@ -121,7 +122,7 @@ final class ReviewSession {
     }
 
     private func writeQuestion() async {
-        guard let item = current else {
+        guard let lesson = current else {
             phase = .done
             return
         }
@@ -130,10 +131,11 @@ final class ReviewSession {
         question = ""
         judgment = nil
         intervalDays = nil
-        let request = LLMRequestSettings(settings)
-        let client = LLMServiceFactory.make(hasAPIKey: settings.hasAPIKey)
         do {
-            question = try await ReviewEngine.probe(item: item, settings: request, client: client)
+            try settings.requireKey()
+            let request = LLMRequestSettings(settings)
+            let client = try LLMServiceFactory.make(hasAPIKey: settings.hasAPIKey)
+            question = try await ReviewEngine.probe(lesson: lesson, settings: request, client: client)
             phase = .answering
         } catch {
             errorMessage = error.localizedDescription

@@ -2,57 +2,53 @@ import Foundation
 
 enum ReviewEngine {
     static func probe(
-        item: MemoryItem,
+        lesson: Lesson,
         settings: LLMRequestSettings,
         client: any LLMServicing
     ) async throws -> String {
-        if settings.apiKey.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
-            return stubProbe(item: item)
-        }
-
         var request = settings
         request.systemOverride = """
         You write ONE review probe for a language learner.
         Native language: \(settings.nativeLanguage).
         They are studying \(settings.targetLanguage).
-        Item kind: \(item.kind.rawValue)
-        Target: \(item.target)
-        Note (do not quote this as the answer in the question): \(item.note)
 
-        The probe should check they can use the item, not only recognize it.
-        Word: meaning plus a short production, or use it in a sentence.
-        Sentence: reproduce or recast it.
-        Grammar: use the pattern in a new sentence.
+        This lesson is ONE sense/use only. Test that sense, not other meanings.
+        Lean on the learner's struggle (focus) when it is set.
 
-        Write the question in \(settings.nativeLanguage). Include any \(settings.targetLanguage) \
-        the learner must see. Do not reveal a model answer.
+        Kind: \(lesson.kind.rawValue)
+        Title: \(lesson.title)
+        Sense: \(lesson.sense)
+        Focus: \(lesson.focus)
+        Context: \(lesson.context)
+        Contrasts: \(Self.encode(lesson.contrasts))
+        Pitfalls: \(lesson.pitfalls.joined(separator: "; "))
+
+        Write a question that makes them use this point, not only recognize it.
+        Do not reveal a model answer. Do not quote the whole guide.
 
         Reply with JSON only, no markdown:
         {"question":"..."}
+        Question in \(settings.nativeLanguage). Include any \(settings.targetLanguage) they must see.
         """
 
-        let messages = [
-            Message(role: .user, content: "Write the probe now."),
-        ]
-        let raw = try await client.complete(messages: messages, settings: request)
+        let raw = try await client.complete(
+            messages: [Message(role: .user, content: "Write the probe now.")],
+            settings: request
+        )
         if let question = parseProbe(raw) { return question }
         throw ReviewError.unreadableProbe
     }
 
     static func grade(
-        item: MemoryItem,
+        lesson: Lesson,
         question: String,
         answer: String,
         settings: LLMRequestSettings,
         client: any LLMServicing
     ) async throws -> ReviewJudgment {
-        if settings.apiKey.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
-            return stubGrade(item: item, answer: answer)
-        }
-
         var request = settings
         request.systemOverride = """
-        You grade one language-learning review answer.
+        You grade one language-learning review answer against this lesson's sense.
         Native language: \(settings.nativeLanguage).
         They are studying \(settings.targetLanguage).
 
@@ -63,6 +59,7 @@ enum ReviewEngine {
         - easy: fluent, no issue
 
         Accept valid paraphrases. Do not require exact match.
+        Other senses of the same word are not required.
 
         Reply with JSON only, no markdown:
         {"grade":"miss"|"partial"|"pass"|"easy","reason":"...","next_hint":"..."}
@@ -70,76 +67,38 @@ enum ReviewEngine {
         next_hint: one-line nudge if not easy, else empty.
         """
 
-        let messages = [
-            Message(
-                role: .user,
-                content: """
-                Kind: \(item.kind.rawValue)
-                Target: \(item.target)
-                Note: \(item.note)
-                Question: \(question)
-                Answer: \(answer)
-                """
-            ),
-        ]
-        let raw = try await client.complete(messages: messages, settings: request)
+        let raw = try await client.complete(
+            messages: [
+                Message(
+                    role: .user,
+                    content: """
+                    Title: \(lesson.title)
+                    Sense: \(lesson.sense)
+                    Focus: \(lesson.focus)
+                    Question: \(question)
+                    Answer: \(answer)
+                    """
+                ),
+            ],
+            settings: request
+        )
         if let judgment = parseGrade(raw) { return judgment }
         throw ReviewError.unreadableGrade
     }
 
-    static func stubProbe(item: MemoryItem) -> String {
-        switch item.kind {
-        case .word:
-            return "What does “\(item.target)” mean? Use it in a short sentence."
-        case .sentence:
-            return "Reproduce or recast this:\n\(item.target)"
-        case .grammar:
-            return "Use this pattern in a new sentence:\n\(item.target)"
-        }
-    }
-
-    static func stubGrade(item: MemoryItem, answer: String) -> ReviewJudgment {
-        let trimmed = answer.trimmingCharacters(in: .whitespacesAndNewlines)
-        if trimmed.isEmpty {
-            return ReviewJudgment(
-                grade: .miss,
-                reason: "No answer.",
-                nextHint: "Try a short sentence that uses the item."
-            )
-        }
-
-        let answerFolded = trimmed.lowercased()
-        let targetFolded = item.target.lowercased()
-        if !targetFolded.isEmpty, answerFolded.contains(targetFolded), trimmed.count >= 8 {
-            return ReviewJudgment(
-                grade: .pass,
-                reason: "Stub pass — you used the item. Add an API key for a real grade.",
-                nextHint: ""
-            )
-        }
-        if trimmed.count >= 12 {
-            return ReviewJudgment(
-                grade: .partial,
-                reason: "Stub partial — something was written. Add an API key for a real grade.",
-                nextHint: item.target.isEmpty ? "" : "Include “\(item.target)” if you can."
-            )
-        }
-        return ReviewJudgment(
-            grade: .miss,
-            reason: "Stub miss — too little to go on. Add an API key for a real grade.",
-            nextHint: "Write a full attempt."
-        )
+    private static func encode(_ contrasts: [LessonContrast]) -> String {
+        contrasts.map { "\($0.item): \($0.difference)" }.joined(separator: "; ")
     }
 
     private static func parseProbe(_ raw: String) -> String? {
-        guard let object = jsonObject(in: raw) else { return nil }
+        guard let object = JSONSlice.object(in: raw) else { return nil }
         let question = (object["question"] as? String)?
             .trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
         return question.isEmpty ? nil : question
     }
 
     private static func parseGrade(_ raw: String) -> ReviewJudgment? {
-        guard let object = jsonObject(in: raw) else { return nil }
+        guard let object = JSONSlice.object(in: raw) else { return nil }
         let rawGrade = (object["grade"] as? String)?.lowercased() ?? ""
         guard let grade = ReviewGrade(rawValue: rawGrade) else { return nil }
         let reason = (object["reason"] as? String)?
@@ -154,23 +113,13 @@ enum ReviewEngine {
             nextHint: hint.trimmingCharacters(in: .whitespacesAndNewlines)
         )
     }
-
-    private static func jsonObject(in raw: String) -> [String: Any]? {
-        let trimmed = raw.trimmingCharacters(in: .whitespacesAndNewlines)
-        let slice: String
-        if let start = trimmed.firstIndex(of: "{"), let end = trimmed.lastIndex(of: "}") {
-            slice = String(trimmed[start...end])
-        } else {
-            slice = trimmed
-        }
-        guard let data = slice.data(using: .utf8) else { return nil }
-        return (try? JSONSerialization.jsonObject(with: data)) as? [String: Any]
-    }
 }
 
 enum ReviewError: LocalizedError {
     case unreadableProbe
     case unreadableGrade
+    case unreadableLesson
+    case noCandidates
     case missingItem
 
     var errorDescription: String? {
@@ -179,8 +128,12 @@ enum ReviewError: LocalizedError {
             return "The model did not return a usable question."
         case .unreadableGrade:
             return "The model did not return a usable grade."
+        case .unreadableLesson:
+            return "The model did not return a usable lesson."
+        case .noCandidates:
+            return "Nothing in this stretch looks like a lesson yet."
         case .missingItem:
-            return "That item is gone."
+            return "That lesson is gone."
         }
     }
 }

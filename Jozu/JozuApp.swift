@@ -8,12 +8,12 @@ struct JozuApp: App {
 
     var body: some Scene {
         WindowGroup {
-            ChatView()
+            JozuShell()
                 .environment(settings)
                 .preferredColorScheme(.light)
         }
         .modelContainer(container)
-        .defaultSize(width: 760, height: 860)
+        .defaultSize(width: 980, height: 860)
 
         #if os(macOS)
         Settings {
