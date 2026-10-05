@@ -4,16 +4,17 @@ Ordered. Only the top item is “now” unless a conversation explicitly pulls s
 
 ## Now
 
-- [ ] **S0 verify** — Open `Jozu.xcodeproj` on a Mac, run Jozu, send a stub message, open Settings.
+- [ ] **S6 verify** — Remember a turn, Review due, answer the probe, item moves to Later with a new `nextReviewAt`.
 
 ## Up next
 
-- [ ] **S1 live tutor** — Confirm a real key works. Tighten the system prompt. Stream tokens if the first live call feels slow.
-- [ ] **S2 persist chats** — SwiftData (or a thin SQLite store) for threads. One thread is fine at first.
-- [ ] **S3 photo + OCR** — Attach image → Vision recognize → include text (and optionally the image) in the next turn.
-- [ ] **S4 remember** — Chat tool / confirmation that stores a `MemoryItem` (word / sentence / grammar, source turn, notes).
-- [ ] **S5 review list** — Browse items. Due drip. Not a grade session yet.
-- [ ] **S6 review probe** — LLM writes a question, user answers, LLM grades, interval updates.
+- [x] **S0 verify** — Mac window runs; composer ink fixed.
+- [x] **S1 live tutor** — Streamed replies; tighter prompt. Live key still optional.
+- [x] **S2 persist chats** — SwiftData, one thread, Clear.
+- [x] **S3 photo + OCR** — Attach / drop / paste → Vision → editable text in the turn. Image stays on-device.
+- [x] **S4 remember** — Remember button + “remember this”. Word / sentence / grammar.
+- [x] **S5 review list** — Memories sheet. Due first. No grade session yet.
+- [x] **S6 review probe** — LLM writes a question, user answers, LLM grades, interval updates.
 - [ ] **S7 Mac peek** — Selected text from a user-chosen app via Accessibility. Explicit allowlist.
 
 ## Later

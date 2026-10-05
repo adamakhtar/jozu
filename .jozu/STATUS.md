@@ -1,36 +1,23 @@
 # Status
 
-Last updated: 2026-10-04 (composer text: force light scheme + darker ink)
+Last updated: 2026-10-05 (API key: data-protection keychain, no login-keychain prompt)
 
 ## What exists
 
-- Empty-repo bootstrap: native macOS SwiftUI app named **Jozu**.
-- Chat UI (user / assistant bubbles, composer, Cmd-Return to send).
-- Reply in **native** or **target** language (session toggle + Settings).
-- `LLMServicing` protocol:
-  - `StubLLMService` if no API key
-  - `OpenAICompatibleLLMService` if a key is present (any OpenAI-compatible base URL)
-- Settings: native language, target language, model, base URL, API key (Keychain).
-- App sandbox + outbound network client entitlement.
+- Native macOS SwiftUI app **Jozu**.
+- Chat, reply-language toggle, Settings, streamed replies, one persisted thread. API key in the data-protection keychain (Application Support fallback).
+- Photo attach / drop / paste → on-device Vision OCR. Image stays local.
+- Review items: Remember on a turn, or type “remember this”. Stored as word / sentence / grammar.
+- **Memories** list (Due first). **Review** writes a probe, grades the answer, sets `nextReviewAt`.
 
 ## What does not exist
 
-- Persistence of chats or review items
-- Photos / OCR
-- Review schedule
-- Answer grading
+- Multiple conversations
 - Screen / other-app peek
-- iPhone target (code is mostly portable; the Xcode target is macOS-only)
+- Multimodal image upload to the LLM
+- SM-2 / FSRS
+- iPhone target
 
 ## Environment constraint
 
-Cloud agent host is Linux. No Xcode, no Simulator, no self-hosted Mac worker. GUI is unverified until someone runs it on a Mac.
-
-## Defaults (assumptions)
-
-| Setting | Value | Why |
-| --- | --- | --- |
-| Native language | English | Unspecified; easy to change |
-| Target language | Japanese | Repo name 上手 / jozu |
-| Model | `gpt-4o-mini` | Cheap default; override in Settings |
-| API base | `https://api.openai.com/v1` | Swap for Groq, Ollama, etc. |
+Cloud agent host is Linux. GUI is unverified here.

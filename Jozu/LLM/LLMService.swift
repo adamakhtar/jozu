@@ -1,6 +1,7 @@
 import Foundation
 
 protocol LLMServicing: Sendable {
+    func stream(messages: [Message], settings: LLMRequestSettings) -> AsyncThrowingStream<String, Error>
     func complete(messages: [Message], settings: LLMRequestSettings) async throws -> String
 }
 
@@ -11,6 +12,8 @@ struct LLMRequestSettings: Sendable {
     let model: String
     let apiBaseURL: String
     let apiKey: String
+    var extraInstruction: String
+    var systemOverride: String?
 
     @MainActor
     init(_ settings: AppSettings) {
@@ -20,6 +23,8 @@ struct LLMRequestSettings: Sendable {
         model = settings.model
         apiBaseURL = settings.apiBaseURL
         apiKey = settings.apiKey
+        extraInstruction = ""
+        systemOverride = nil
     }
 
     var replyLanguageName: String {
@@ -31,13 +36,24 @@ struct LLMRequestSettings: Sendable {
 
     var systemPrompt: String {
         """
-        You are Jozu, a concise language-learning companion.
+        You are Jozu, a language-learning companion.
         The learner's native language is \(nativeLanguage).
         They are studying \(targetLanguage).
         Reply in \(replyLanguageName) unless they explicitly ask otherwise.
-        Explain grammar clearly. Give short, natural examples.
-        If they ask to remember a word, sentence, or grammar point, acknowledge it \
-        and restate what you would store. Persistence is not wired yet — do not pretend it was saved.
+
+        Be precise and brief.
+        - Meaning: gloss, one natural example, one pitfall if it matters.
+        - How to say X: everyday phrasing, a literal gloss, register if needed.
+        - Grammar: name the pattern, show the frame, two short examples.
+        Do not dump a textbook chapter. Do not praise the learner.
+
+        When the user includes "Text from photo:", that is on-device OCR and may contain mistakes. \
+        Prefer the intended reading. Do not mention OCR unless the text is genuinely ambiguous.
+
+        Chat turns persist on this device. Review items are saved on this device when \
+        the learner uses Remember or asks to remember something. If a review item was \
+        just saved, you will be told — confirm it in one short line. Do not claim you \
+        cannot save.
         """
     }
 }
@@ -49,25 +65,52 @@ enum LLMServiceFactory {
 }
 
 struct StubLLMService: LLMServicing {
-    func complete(messages: [Message], settings: LLMRequestSettings) async throws -> String {
-        try await Task.sleep(for: .milliseconds(350))
-        let last = messages.last(where: { $0.role == .user })?.content.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
-        let sample: String
+    func stream(messages: [Message], settings: LLMRequestSettings) -> AsyncThrowingStream<String, Error> {
+        let last = messages.last(where: { $0.role == .user })?.content
+            .trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+        let body: String
         if last.isEmpty {
-            sample = "Ask me what a word means, how a sentence works, or how to say something in \(settings.targetLanguage)."
+            body = "Ask me what a word means, how a sentence works, or how to say something in \(settings.targetLanguage)."
         } else {
-            sample = """
+            body = """
             You asked: “\(last)”
 
             I would unpack this in \(settings.replyLanguageName): meaning, a natural example, and one thing to watch for. \
             Add an API key in Settings to get a real explanation.
             """
         }
-        return """
-        Offline stub — no API key yet.
+        let reply = "Offline stub — no API key yet.\n\n\(body)"
+        return Self.chunked(reply)
+    }
 
-        \(sample)
-        """
+    func complete(messages: [Message], settings: LLMRequestSettings) async throws -> String {
+        var text = ""
+        for try await chunk in stream(messages: messages, settings: settings) {
+            text += chunk
+        }
+        if text.isEmpty { throw LLMError.emptyResponse }
+        return text
+    }
+
+    private static func chunked(_ reply: String) -> AsyncThrowingStream<String, Error> {
+        return AsyncThrowingStream { continuation in
+            let task = Task {
+                do {
+                    var index = reply.startIndex
+                    while index < reply.endIndex {
+                        try Task.checkCancellation()
+                        let end = reply.index(index, offsetBy: 8, limitedBy: reply.endIndex) ?? reply.endIndex
+                        continuation.yield(String(reply[index..<end]))
+                        index = end
+                        try await Task.sleep(for: .milliseconds(18))
+                    }
+                    continuation.finish()
+                } catch {
+                    continuation.finish(throwing: error)
+                }
+            }
+            continuation.onTermination = { _ in task.cancel() }
+        }
     }
 }
 
@@ -76,6 +119,20 @@ struct OpenAICompatibleLLMService: LLMServicing {
 
     init(session: URLSession = .shared) {
         self.session = session
+    }
+
+    func stream(messages: [Message], settings: LLMRequestSettings) -> AsyncThrowingStream<String, Error> {
+        AsyncThrowingStream { continuation in
+            let task = Task {
+                do {
+                    try await self.write(messages: messages, settings: settings, to: continuation)
+                    continuation.finish()
+                } catch {
+                    continuation.finish(throwing: error)
+                }
+            }
+            continuation.onTermination = { _ in task.cancel() }
+        }
     }
 
     func complete(messages: [Message], settings: LLMRequestSettings) async throws -> String {
@@ -88,15 +145,9 @@ struct OpenAICompatibleLLMService: LLMServicing {
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
         request.setValue("Bearer \(settings.apiKey)", forHTTPHeaderField: "Authorization")
         request.timeoutInterval = 60
-
-        let payload = ChatCompletionRequest(
-            model: settings.model,
-            messages: [.init(role: "system", content: settings.systemPrompt)]
-                + messages
-                .filter { $0.role != .system }
-                .map { .init(role: $0.role.rawValue, content: $0.content) }
+        request.httpBody = try JSONEncoder().encode(
+            ChatCompletionRequest(model: settings.model, messages: Self.payload(messages, settings: settings), stream: false)
         )
-        request.httpBody = try JSONEncoder().encode(payload)
 
         let (data, response) = try await session.data(for: request)
         let status = (response as? HTTPURLResponse)?.statusCode ?? 0
@@ -110,6 +161,81 @@ struct OpenAICompatibleLLMService: LLMServicing {
             throw LLMError.emptyResponse
         }
         return text
+    }
+
+    private func write(
+        messages: [Message],
+        settings: LLMRequestSettings,
+        to continuation: AsyncThrowingStream<String, Error>.Continuation
+    ) async throws {
+        guard let url = Self.endpoint(from: settings.apiBaseURL) else {
+            throw LLMError.invalidBaseURL
+        }
+
+        var request = URLRequest(url: url)
+        request.httpMethod = "POST"
+        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        request.setValue("Bearer \(settings.apiKey)", forHTTPHeaderField: "Authorization")
+        request.timeoutInterval = 120
+
+        let payload = ChatCompletionRequest(
+            model: settings.model,
+            messages: Self.payload(messages, settings: settings),
+            stream: true
+        )
+        request.httpBody = try JSONEncoder().encode(payload)
+
+        let (bytes, response) = try await session.bytes(for: request)
+        let status = (response as? HTTPURLResponse)?.statusCode ?? 0
+        if !(200...299).contains(status) {
+            var data = Data()
+            for try await byte in bytes {
+                data.append(byte)
+            }
+            let body = String(data: data, encoding: .utf8) ?? ""
+            throw LLMError.http(status: status, body: body)
+        }
+
+        var received = false
+        for try await line in bytes.lines {
+            try Task.checkCancellation()
+            guard let payload = Self.ssePayload(from: line) else { continue }
+            if payload == "[DONE]" { break }
+            guard let data = payload.data(using: .utf8) else { continue }
+            guard let piece = try? JSONDecoder().decode(ChatCompletionChunk.self, from: data)
+                .choices.first?.delta.content,
+                !piece.isEmpty
+            else { continue }
+            received = true
+            continuation.yield(piece)
+        }
+
+        if !received {
+            throw LLMError.emptyResponse
+        }
+    }
+
+    private static func payload(
+        _ messages: [Message],
+        settings: LLMRequestSettings
+    ) -> [ChatCompletionRequest.Message] {
+        var result = [ChatCompletionRequest.Message(
+            role: "system",
+            content: settings.systemOverride ?? settings.systemPrompt
+        )]
+        if !settings.extraInstruction.isEmpty {
+            result.append(.init(role: "system", content: settings.extraInstruction))
+        }
+        result += messages
+            .filter { $0.role != .system }
+            .map { .init(role: $0.role.rawValue, content: $0.content) }
+        return result
+    }
+
+    private static func ssePayload(from line: String) -> String? {
+        let trimmed = line.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard trimmed.hasPrefix("data:") else { return nil }
+        return String(trimmed.dropFirst(5)).trimmingCharacters(in: .whitespaces)
     }
 
     private static func endpoint(from base: String) -> URL? {
@@ -146,6 +272,19 @@ private struct ChatCompletionRequest: Encodable {
 
     let model: String
     let messages: [Message]
+    let stream: Bool
+}
+
+private struct ChatCompletionChunk: Decodable {
+    struct Choice: Decodable {
+        struct Delta: Decodable {
+            let content: String?
+        }
+
+        let delta: Delta
+    }
+
+    let choices: [Choice]
 }
 
 private struct ChatCompletionResponse: Decodable {

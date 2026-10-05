@@ -2,6 +2,36 @@
 
 Append-only. Newest first. Supersede; do not rewrite history.
 
+## 2026-10-05 — API key is data-protection keychain, not login-keychain ACL
+
+**Choice:** `kSecUseDataProtectionKeychain`. Never read the old login-keychain item (that dialog is an ACL on the binary’s code signature; “Always Allow” dies on the next ad-hoc ⌘R). If data-protection fails (no team / missing entitlement), store the key in the sandbox Application Support folder.
+
+**Why:** The login-keychain prompt was blocking every rebuild. Data-protection items are partitioned by app id and do not use that ACL. File fallback keeps local unsigned builds usable.
+
+## 2026-10-05 — Review probe is LLM JSON + coarse drip
+
+**Choice:** Due items (header **Review**, Memories **Review due**, or a row) open a probe session, not a chat turn. LLM writes `{"question"}`. Learner answers. LLM returns `{"grade","reason","next_hint"}` with miss / partial / pass / easy. Those map to 1 / 2 / 7 / 14 days and `nextReviewAt`. No key: stub question from the item, stub grade from length / whether the target appears. Skip leaves the item due. Not SM-2. Not BLEU.
+
+**Why:** Matches the 2026-10-04 drip + LLM-as-judge decisions. Exact intervals were open; this is the working table until a later decision replaces it.
+
+## 2026-10-04 — Remember is local extract + list
+
+**Choice:** Assistant **Remember** button, or a “remember this / 覚えて” user turn. Extract one `{kind, target, note}` via LLM JSON when a key exists; otherwise a heuristic. Persist `StoredMemory` with `nextReviewAt = now`. Memories sheet, Due first. Clear chat does not delete memories. No probe/grade yet.
+
+**Why:** The loop has to be visible without S6. Heuristic keeps stub usable.
+
+## 2026-10-04 — Vision OCR, image stays local
+
+**Choice:** File picker / drop / paste → `VNRecognizeTextRequest` (accurate, language-corrected) with native + target language hints. Retry with no language list if that fails. User can edit the reading. Only the text is sent to the LLM. Persist a JPEG thumbnail + OCR string on the turn.
+
+**Why:** On-device, Mac + iPhone later, no OCR SDK. Multimodal upload is a later fallback if Vision is thin on a script.
+
+## 2026-10-04 — One SwiftData thread, streamed tokens
+
+**Choice:** `StoredConversation` / `StoredMessage` on disk via SwiftData. One conversation. User/assistant turns saved after they complete (user immediately, assistant when the stream finishes). LLM path is `stream` only (SSE `chat/completions`). Stub also chunks so the loop is visible without a key.
+
+**Why:** Quit/reopen is the first real product test. Streaming is how a live tutor feels. Multiple threads wait until one thread is boringly solid.
+
 ## 2026-10-04 — Slice 0 stack
 
 **Choice:** Native Swift + SwiftUI, macOS 14+, local-first. Shared UI patterns kept iOS-safe. No JS shell.
