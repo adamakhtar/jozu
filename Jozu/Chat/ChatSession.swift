@@ -10,11 +10,15 @@ final class ChatSession {
     var pendingPhoto: PendingPhoto?
     var isSending = false
     var rememberingID: UUID?
+    var isMerging = false
     var errorMessage: String?
     var notice: String?
     var needsSettings = false
     var candidates: [LessonCandidate] = []
     var openedLessonID: UUID?
+    var discussingLessonID: UUID?
+    var discussMessages: [Message] = []
+    var requestChatPane = false
     private var pendingSourceID: UUID?
 
     private let settings: AppSettings
@@ -33,11 +37,31 @@ final class ChatSession {
         lessons.filter(\.isDue).count
     }
 
+    var discussingLesson: Lesson? {
+        guard let discussingLessonID else { return nil }
+        return lessons.first { $0.id == discussingLessonID }
+    }
+
+    var displayedMessages: [Message] {
+        discussingLessonID == nil ? messages : discussMessages
+    }
+
     var canSend: Bool {
-        guard !isSending else { return false }
+        guard !isSending, !isMerging else { return false }
         if pendingPhoto?.isRecognizing == true { return false }
         let hasText = !draft.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
         return hasText || pendingPhoto != nil
+    }
+
+    var canClear: Bool {
+        !isSending && !isMerging && !displayedMessages.isEmpty
+    }
+
+    var canMerge: Bool {
+        discussingLessonID != nil
+            && !isSending
+            && !isMerging
+            && discussMessages.contains { $0.role == .user }
     }
 
     private func reviewQueue(startingAt itemID: UUID?) -> [Lesson] {
@@ -60,11 +84,38 @@ final class ChatSession {
     }
 
     var scrollAnchor: String {
-        "\(messages.count)|\(messages.last?.content.count ?? 0)|\(isSending)|\(pendingPhoto != nil)"
+        let msgs = displayedMessages
+        return "\(msgs.count)|\(msgs.last?.content.count ?? 0)|\(isSending)|\(pendingPhoto != nil)|\(discussingLessonID?.uuidString ?? "")"
     }
 
     func isSaved(messageID: UUID) -> Bool {
         lessons.contains { $0.sourceMessageID == messageID }
+    }
+
+    func startDiscuss(_ id: UUID) {
+        guard !isSending, !isMerging else { return }
+        guard lessons.contains(where: { $0.id == id }) else { return }
+        if discussingLessonID != id {
+            persistDiscuss()
+            discussingLessonID = id
+            discussMessages = lessonStore.discussTranscript(id: id)
+            errorMessage = nil
+            notice = nil
+            draft = ""
+            pendingPhoto = nil
+        }
+        requestChatPane = true
+    }
+
+    func exitDiscuss() {
+        persistDiscuss()
+        discussingLessonID = nil
+        discussMessages = []
+        isMerging = false
+        notice = nil
+        errorMessage = nil
+        draft = ""
+        pendingPhoto = nil
     }
 
     func attachImage(data: Data) async {
@@ -121,6 +172,10 @@ final class ChatSession {
     }
 
     func deleteLesson(_ id: UUID) {
+        if discussingLessonID == id {
+            discussingLessonID = nil
+            discussMessages = []
+        }
         do {
             try lessonStore.delete(id)
             lessons = lessonStore.all()
@@ -152,53 +207,78 @@ final class ChatSession {
             photoJPEG: photo?.thumbnailJPEG,
             ocrText: photo?.ocrText
         )
+
+        if discussingLessonID != nil {
+            await sendDiscuss(user)
+            return
+        }
+
         messages.append(user)
-        persist(user)
+        persistInbox(user)
 
         if RememberIntent.matches(question) {
             await distill(source: lastAssistant()?.id ?? user.id)
             if candidates.isEmpty, let notice {
                 let assistant = Message(role: .assistant, content: notice)
                 messages.append(assistant)
-                persist(assistant)
+                persistInbox(assistant)
             }
             return
         }
 
-        let outbound = messages
-        var assistant = Message(role: .assistant, content: "")
-        messages.append(assistant)
-        isSending = true
-        defer { isSending = false }
+        await streamReply(intoInbox: true)
+    }
+
+    func mergeLesson() async {
+        guard discussingLessonID != nil, let current = discussingLesson else { return }
+        guard discussMessages.contains(where: { $0.role == .user }) else {
+            errorMessage = "Talk about the lesson first."
+            return
+        }
+        do {
+            try settings.requireKey()
+        } catch {
+            present(error)
+            return
+        }
+
+        errorMessage = nil
+        notice = nil
+        isMerging = true
+        defer { isMerging = false }
 
         do {
             let client = try LLMServiceFactory.make(hasAPIKey: settings.hasAPIKey)
             let request = LLMRequestSettings(settings)
-            for try await chunk in client.stream(messages: outbound, settings: request) {
-                assistant.content += chunk
-                replaceLast(assistant)
-            }
-            if assistant.content.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
-                throw LLMError.emptyResponse
-            }
-            persist(assistant)
-        } catch is CancellationError {
-            if !assistant.content.isEmpty {
-                persist(assistant)
-            } else {
-                removeLastIfAssistantPlaceholder()
-            }
+            let revised = try await LessonDistiller.merge(
+                lesson: current,
+                messages: discussMessages,
+                settings: request,
+                client: client
+            )
+            let saved = try lessonStore.update(revised)
+            let confirmation = Message(role: .assistant, content: "Updated the lesson.")
+            discussMessages.append(confirmation)
+            persistDiscuss()
+            lessons = lessonStore.all()
+            discussingLessonID = nil
+            discussMessages = []
+            openedLessonID = saved.id
+            notice = "Updated lesson: \(saved.title) — \(saved.subtitle)"
         } catch {
             present(error)
-            if assistant.content.isEmpty {
-                removeLastIfAssistantPlaceholder()
-            } else {
-                persist(assistant)
-            }
         }
     }
 
     func clear() {
+        if discussingLessonID != nil {
+            discussMessages = []
+            persistDiscuss()
+            errorMessage = nil
+            notice = nil
+            pendingPhoto = nil
+            return
+        }
         do {
             try store.deleteAllMessages()
             messages = []
@@ -207,6 +287,74 @@ final class ChatSession {
             notice = nil
         } catch {
             present(error)
+        }
+    }
+
+    private func sendDiscuss(_ user: Message) async {
+        discussMessages.append(user)
+        persistDiscuss()
+
+        if MergeIntent.matches(user.questionText) {
+            await mergeLesson()
+            return
+        }
+
+        await streamReply(intoInbox: false)
+    }
+
+    private func streamReply(intoInbox: Bool) async {
+        let history = intoInbox ? messages : discussMessages
+        var assistant = Message(role: .assistant, content: "")
+        if intoInbox {
+            messages.append(assistant)
+        } else {
+            discussMessages.append(assistant)
+        }
+        isSending = true
+        defer { isSending = false }
+
+        do {
+            let client = try LLMServiceFactory.make(hasAPIKey: settings.hasAPIKey)
+            var request = LLMRequestSettings(settings)
+            if !intoInbox, let lesson = discussingLesson {
+                request.extraInstruction = """
+                You are discussing one saved lesson. Stay on this sense/use. \
+                Do not start a second lesson. The app merges the guide when the learner uses Update lesson. \
+                Do not claim you cannot update it.
+
+                Current lesson:
+                \(lesson.promptDump)
+                """
+            }
+            for try await chunk in client.stream(messages: history, settings: request) {
+                assistant.content += chunk
+                replaceLast(assistant, inbox: intoInbox)
+            }
+            if assistant.content.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+                throw LLMError.emptyResponse
+            }
+            if intoInbox {
+                persistInbox(assistant)
+            } else {
+                persistDiscuss()
+            }
+        } catch is CancellationError {
+            if assistant.content.isEmpty {
+                removeLastIfAssistantPlaceholder(inbox: intoInbox)
+            } else if intoInbox {
+                persistInbox(assistant)
+            } else {
+                persistDiscuss()
+            }
+        } catch {
+            present(error)
+            if assistant.content.isEmpty {
+                removeLastIfAssistantPlaceholder(inbox: intoInbox)
+            } else if intoInbox {
+                persistInbox(assistant)
+            } else {
+                persistDiscuss()
+            }
         }
     }
 
@@ -278,21 +426,40 @@ final class ChatSession {
         return "Text from photo:\n\(reading)\n\n\(question)"
     }
 
-    private func replaceLast(_ message: Message) {
-        guard let index = messages.indices.last else { return }
-        messages[index] = message
+    private func replaceLast(_ message: Message, inbox: Bool) {
+        if inbox {
+            guard let index = messages.indices.last else { return }
+            messages[index] = message
+        } else {
+            guard let index = discussMessages.indices.last else { return }
+            discussMessages[index] = message
+        }
     }
 
-    private func removeLastIfAssistantPlaceholder() {
-        guard let last = messages.last, last.role == .assistant, last.content.isEmpty else { return }
-        messages.removeLast()
+    private func removeLastIfAssistantPlaceholder(inbox: Bool) {
+        if inbox {
+            guard let last = messages.last, last.role == .assistant, last.content.isEmpty else { return }
+            messages.removeLast()
+        } else {
+            guard let last = discussMessages.last, last.role == .assistant, last.content.isEmpty else { return }
+            discussMessages.removeLast()
+        }
     }
 
-    private func persist(_ message: Message) {
+    private func persistInbox(_ message: Message) {
         do {
             try store.update(message)
         } catch {
             errorMessage = "Could not save this turn: \(error.localizedDescription)"
+        }
+    }
+
+    private func persistDiscuss() {
+        guard let discussingLessonID else { return }
+        do {
+            try lessonStore.saveDiscuss(id: discussingLessonID, messages: discussMessages)
+        } catch {
+            errorMessage = "Could not save this discussion: \(error.localizedDescription)"
         }
     }
 }

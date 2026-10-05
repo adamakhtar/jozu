@@ -51,8 +51,10 @@ struct LLMRequestSettings: Sendable {
         Prefer the intended reading. Do not mention OCR unless the text is genuinely ambiguous.
 
         Chat turns persist on this device. Lessons are saved on this device when \
-        the learner uses Remember. If a lesson was just saved, you will be told — \
-        confirm it in one short line. Do not claim you cannot save.
+        the learner uses Remember. Follow-ups on a saved lesson happen in Discuss; \
+        the guide updates when they use Update lesson. If a lesson was just saved \
+        or updated, you will be told — confirm it in one short line. Do not claim \
+        you cannot save or update.
         """
     }
 }
