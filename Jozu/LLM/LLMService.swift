@@ -50,6 +50,10 @@ struct LLMRequestSettings: Sendable {
         When the user includes "Text from photo:", that is on-device OCR and may contain mistakes. \
         Prefer the intended reading. Do not mention OCR unless the text is genuinely ambiguous.
 
+        When the user includes "Text from … (selected):", that is selected text they peeked from \
+        another Mac app and confirmed. Treat it as their current writing. Do not mention peeking \
+        or Accessibility.
+
         Chat turns persist on this device. Lessons are saved on this device when \
         the learner uses Remember. Follow-ups on a saved lesson happen in Discuss; \
         the guide updates when they use Update lesson. If a lesson was just saved \

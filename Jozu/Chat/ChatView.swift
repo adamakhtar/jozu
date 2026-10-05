@@ -12,6 +12,7 @@ struct ChatView: View {
     @Bindable var session: ChatSession
     @Environment(AppSettings.self) private var settings
     @State private var importingPhoto = false
+    @State private var showingPeek = false
     @FocusState private var composerFocused: Bool
 
     var body: some View {
@@ -40,6 +41,9 @@ struct ChatView: View {
         .onPasteCommand(of: [.image], perform: { providers in
             _ = importProviders(providers)
         })
+        .sheet(isPresented: $showingPeek) {
+            PeekSheet(session: session)
+        }
         #endif
     }
 
@@ -93,10 +97,10 @@ struct ChatView: View {
                     .font(.system(size: 13))
                     .foregroundStyle(JozuTheme.muted)
             } else {
-                Text("Ask about a word, a pattern, or a photo of text.")
+                Text("Ask about a word, a pattern, a photo, or selected text from another app.")
                     .font(.system(size: 16, design: .serif))
                     .foregroundStyle(JozuTheme.ink)
-                Text("Remember a turn to save a lesson. Open Lessons to search, discuss, and review.")
+                Text("Remember a turn to save a lesson. Peek reads a selection you confirm. Open Lessons to search, discuss, and review.")
                     .font(.system(size: 13))
                     .foregroundStyle(JozuTheme.muted)
             }
@@ -164,14 +168,14 @@ struct ChatView: View {
                 pendingPhotoRow
             }
 
+            if session.pendingPeek != nil {
+                pendingPeekRow
+            }
+
             HStack(alignment: .bottom, spacing: 10) {
                 JozuComposerField(
                     text: $session.draft,
-                    placeholder: session.pendingPhoto == nil
-                        ? (session.discussingLesson == nil
-                           ? "Ask about \(settings.targetLanguage)…"
-                           : "Ask a follow-up about this lesson…")
-                        : "Ask about the photo, or send as-is…"
+                    placeholder: composerPlaceholder
                 )
                 .focused($composerFocused)
 
@@ -183,6 +187,17 @@ struct ChatView: View {
                 .buttonStyle(.borderless)
                 .help("Attach a photo of text")
                 .disabled(session.isSending || session.isMerging)
+
+                #if os(macOS)
+                Button {
+                    showingPeek = true
+                } label: {
+                    Image(systemName: "eye")
+                }
+                .buttonStyle(.borderless)
+                .help("Peek selected text from an allowed app")
+                .disabled(session.isSending || session.isMerging)
+                #endif
 
                 Button {
                     Task { await session.send() }
@@ -250,6 +265,55 @@ struct ChatView: View {
         )
     }
 
+    private var pendingPeekRow: some View {
+        HStack(alignment: .top, spacing: 10) {
+            Image(systemName: "eye")
+                .foregroundStyle(JozuTheme.vermillion)
+                .frame(width: 20)
+
+            VStack(alignment: .leading, spacing: 4) {
+                Text("From \(session.pendingPeek?.appName ?? "app")")
+                    .font(.system(size: 11, weight: .semibold))
+                    .foregroundStyle(JozuTheme.vermillion)
+                TextField(
+                    "Selected text",
+                    text: pendingPeekBinding,
+                    axis: .vertical
+                )
+                .textFieldStyle(.plain)
+                .font(.system(size: 12))
+                .foregroundStyle(JozuTheme.ink)
+                .lineLimit(2...8)
+            }
+
+            Button {
+                session.discardPeek()
+            } label: {
+                Image(systemName: "xmark.circle.fill")
+                    .foregroundStyle(JozuTheme.muted)
+            }
+            .buttonStyle(.borderless)
+            .help("Remove peeked text")
+        }
+        .padding(10)
+        .background(JozuTheme.card)
+        .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
+        .overlay(
+            RoundedRectangle(cornerRadius: 8, style: .continuous)
+                .stroke(JozuTheme.line, lineWidth: 1)
+        )
+    }
+
+    private var composerPlaceholder: String {
+        if session.pendingPeek != nil || session.pendingPhoto != nil {
+            return "Ask about the attached text, or send as-is…"
+        }
+        if session.discussingLesson != nil {
+            return "Ask a follow-up about this lesson…"
+        }
+        return "Ask about \(settings.targetLanguage)…"
+    }
+
     private var footerHint: String {
         if !settings.hasAPIKey {
             return "Add an API key in Settings to chat, save lessons, and review."
@@ -257,7 +321,7 @@ struct ChatView: View {
         if session.discussingLesson != nil {
             return "Return for a new line, ⌘↩ to send. Update lesson when the guide should change."
         }
-        return "Return for a new line, ⌘↩ to send. Remember a turn to save a lesson."
+        return "Return for a new line, ⌘↩ to send. Peek selected text from an allowed app, or Remember a turn."
     }
 
     private var pendingOCRBinding: Binding<String> {
@@ -267,6 +331,17 @@ struct ChatView: View {
                 guard var photo = session.pendingPhoto else { return }
                 photo.ocrText = text
                 session.pendingPhoto = photo
+            }
+        )
+    }
+
+    private var pendingPeekBinding: Binding<String> {
+        Binding(
+            get: { session.pendingPeek?.text ?? "" },
+            set: { text in
+                guard var peek = session.pendingPeek else { return }
+                peek.text = text
+                session.pendingPeek = peek
             }
         )
     }
@@ -325,6 +400,20 @@ private struct MessageBubble: View {
                         .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
                 }
 
+                if let peek = message.peekText, !peek.isEmpty {
+                    VStack(alignment: .leading, spacing: 2) {
+                        if let app = message.peekAppName, !app.isEmpty {
+                            Text(app)
+                                .font(.system(size: 10, weight: .semibold))
+                                .foregroundStyle(message.role == .user ? JozuTheme.userInk.opacity(0.75) : JozuTheme.vermillion)
+                        }
+                        Text(peek)
+                            .font(.system(size: 12))
+                            .foregroundStyle(message.role == .user ? JozuTheme.userInk.opacity(0.9) : JozuTheme.muted)
+                            .textSelection(.enabled)
+                    }
+                }
+
                 if let ocr = message.ocrText, !ocr.isEmpty {
                     Text(ocr)
                         .font(.system(size: 12))
@@ -366,7 +455,7 @@ private struct MessageBubble: View {
 
     @ViewBuilder
     private var bubbleBody: some View {
-        let text = message.ocrText == nil ? message.content : message.questionText
+        let text = (message.ocrText == nil && message.peekText == nil) ? message.content : message.questionText
         if text.isEmpty {
             ProgressView()
                 .controlSize(.small)

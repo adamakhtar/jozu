@@ -13,6 +13,8 @@ struct Message: Identifiable, Codable, Sendable, Hashable {
     let createdAt: Date
     var photoJPEG: Data?
     var ocrText: String?
+    var peekText: String?
+    var peekAppName: String?
 
     init(
         id: UUID = UUID(),
@@ -20,7 +22,9 @@ struct Message: Identifiable, Codable, Sendable, Hashable {
         content: String,
         createdAt: Date = .now,
         photoJPEG: Data? = nil,
-        ocrText: String? = nil
+        ocrText: String? = nil,
+        peekText: String? = nil,
+        peekAppName: String? = nil
     ) {
         self.id = id
         self.role = role
@@ -28,12 +32,13 @@ struct Message: Identifiable, Codable, Sendable, Hashable {
         self.createdAt = createdAt
         self.photoJPEG = photoJPEG
         self.ocrText = ocrText
+        self.peekText = peekText
+        self.peekAppName = peekAppName
     }
 
     var questionText: String {
-        guard let ocrText, !ocrText.isEmpty, content.hasPrefix("Text from photo:") else {
-            return content
-        }
+        let hasAttach = !(ocrText ?? "").isEmpty || !(peekText ?? "").isEmpty
+        guard hasAttach else { return content }
         let marker = "\n\n"
         if let range = content.range(of: marker, options: .backwards) {
             return String(content[range.upperBound...])

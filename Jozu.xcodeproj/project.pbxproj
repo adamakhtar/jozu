@@ -29,6 +29,8 @@
 		A11A00000000000000002018 /* LessonDistiller.swift in Sources */ = {isa = PBXBuildFile; fileRef = A11A00000000000000001019 /* LessonDistiller.swift */; };
 		A11A00000000000000002019 /* LessonLibraryView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A11A0000000000000000101A /* LessonLibraryView.swift */; };
 		A11A0000000000000000201A /* JozuShell.swift in Sources */ = {isa = PBXBuildFile; fileRef = A11A0000000000000000101B /* JozuShell.swift */; };
+		A11A0000000000000000201B /* AXPeek.swift in Sources */ = {isa = PBXBuildFile; fileRef = A11A0000000000000000101C /* AXPeek.swift */; };
+		A11A0000000000000000201C /* PeekSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = A11A0000000000000000101D /* PeekSheet.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -56,6 +58,8 @@
 		A11A00000000000000001019 /* LessonDistiller.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LessonDistiller.swift; sourceTree = "<group>"; };
 		A11A0000000000000000101A /* LessonLibraryView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LessonLibraryView.swift; sourceTree = "<group>"; };
 		A11A0000000000000000101B /* JozuShell.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = JozuShell.swift; sourceTree = "<group>"; };
+		A11A0000000000000000101C /* AXPeek.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AXPeek.swift; sourceTree = "<group>"; };
+		A11A0000000000000000101D /* PeekSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PeekSheet.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -98,6 +102,7 @@
 				A11A0000000000000000000F /* OCR */,
 				A11A00000000000000000010 /* Memory */,
 				A11A00000000000000000011 /* Lesson */,
+				A11A00000000000000000012 /* Peek */,
 				A11A0000000000000000100A /* Assets.xcassets */,
 				A11A0000000000000000100B /* Jozu.entitlements */,
 			);
@@ -177,6 +182,15 @@
 				A11A0000000000000000101B /* JozuShell.swift */,
 			);
 			path = Lesson;
+			sourceTree = "<group>";
+		};
+		A11A00000000000000000012 /* Peek */ = {
+			isa = PBXGroup;
+			children = (
+				A11A0000000000000000101C /* AXPeek.swift */,
+				A11A0000000000000000101D /* PeekSheet.swift */,
+			);
+			path = Peek;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -269,6 +283,8 @@
 				A11A00000000000000002018 /* LessonDistiller.swift in Sources */,
 				A11A00000000000000002019 /* LessonLibraryView.swift in Sources */,
 				A11A0000000000000000201A /* JozuShell.swift in Sources */,
+				A11A0000000000000000201B /* AXPeek.swift in Sources */,
+				A11A0000000000000000201C /* PeekSheet.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

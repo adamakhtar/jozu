@@ -24,6 +24,8 @@ final class StoredMessage {
     var conversation: StoredConversation?
     var photoJPEG: Data?
     var ocrText: String?
+    var peekText: String?
+    var peekAppName: String?
 
     init(
         id: UUID,
@@ -32,7 +34,9 @@ final class StoredMessage {
         createdAt: Date,
         conversation: StoredConversation,
         photoJPEG: Data? = nil,
-        ocrText: String? = nil
+        ocrText: String? = nil,
+        peekText: String? = nil,
+        peekAppName: String? = nil
     ) {
         self.id = id
         self.roleRaw = roleRaw
@@ -41,6 +45,8 @@ final class StoredMessage {
         self.conversation = conversation
         self.photoJPEG = photoJPEG
         self.ocrText = ocrText
+        self.peekText = peekText
+        self.peekAppName = peekAppName
     }
 
     func asMessage() -> Message {
@@ -50,7 +56,9 @@ final class StoredMessage {
             content: content,
             createdAt: createdAt,
             photoJPEG: photoJPEG,
-            ocrText: ocrText
+            ocrText: ocrText,
+            peekText: peekText,
+            peekAppName: peekAppName
         )
     }
 }

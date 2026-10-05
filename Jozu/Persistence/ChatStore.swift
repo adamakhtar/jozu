@@ -32,7 +32,9 @@ final class ChatStore {
             createdAt: message.createdAt,
             conversation: conversation,
             photoJPEG: message.photoJPEG,
-            ocrText: message.ocrText
+            ocrText: message.ocrText,
+            peekText: message.peekText,
+            peekAppName: message.peekAppName
         )
         context.insert(stored)
         conversation.updatedAt = .now
@@ -44,6 +46,8 @@ final class ChatStore {
             stored.content = message.content
             stored.photoJPEG = message.photoJPEG
             stored.ocrText = message.ocrText
+            stored.peekText = message.peekText
+            stored.peekAppName = message.peekAppName
             conversation.updatedAt = .now
             try context.save()
             return
