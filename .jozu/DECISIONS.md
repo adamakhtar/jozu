@@ -2,6 +2,12 @@
 
 Append-only. Newest first. Supersede; do not rewrite history.
 
+## 2026-10-05 — API key is data-protection keychain, not login-keychain ACL
+
+**Choice:** `kSecUseDataProtectionKeychain`. Never read the old login-keychain item (that dialog is an ACL on the binary’s code signature; “Always Allow” dies on the next ad-hoc ⌘R). If data-protection fails (no team / missing entitlement), store the key in the sandbox Application Support folder.
+
+**Why:** The login-keychain prompt was blocking every rebuild. Data-protection items are partitioned by app id and do not use that ACL. File fallback keeps local unsigned builds usable.
+
 ## 2026-10-05 — Review probe is LLM JSON + coarse drip
 
 **Choice:** Due items (header **Review**, Memories **Review due**, or a row) open a probe session, not a chat turn. LLM writes `{"question"}`. Learner answers. LLM returns `{"grade","reason","next_hint"}` with miss / partial / pass / easy. Those map to 1 / 2 / 7 / 14 days and `nextReviewAt`. No key: stub question from the item, stub grade from length / whether the target appears. Skip leaves the item due. Not SM-2. Not BLEU.

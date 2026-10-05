@@ -12,6 +12,8 @@ S6 is on this branch (PR #2). Due memories open a probe: LLM writes a question, 
 
 Composer is a taller 16pt field. Return inserts a newline; ⌘↩ sends (chat) or checks (review). Mac composer uses an NSTextView so the caret sits inside the padding. The review answer stays visible through grading and the judgment.
 
+API key no longer uses the login keychain, so rebuilds should not prompt. Paste the key once more in Settings after this pull.
+
 Pull `cursor/persist-stream-1eb4`, ⌘R. Remember a turn, open **Review** (or Memories → Review due), answer, confirm it lands under Later.
 
 This Linux agent cannot compile or launch the app.
