@@ -48,6 +48,24 @@ final class LessonStore {
         return stored.asLesson()
     }
 
+    @discardableResult
+    func update(_ lesson: Lesson) throws -> Lesson {
+        guard let stored = try fetchLesson(lesson.id) else { throw ReviewError.missingItem }
+        stored.apply(lesson)
+        try context.save()
+        return stored.asLesson()
+    }
+
+    func discussTranscript(id: UUID) -> [Message] {
+        (try? fetchLesson(id))?.discussMessages() ?? []
+    }
+
+    func saveDiscuss(id: UUID, messages: [Message]) throws {
+        guard let stored = try fetchLesson(id) else { throw ReviewError.missingItem }
+        stored.setDiscussMessages(messages)
+        try context.save()
+    }
+
     private func fetchLesson(_ id: UUID) throws -> StoredLesson? {
         var descriptor = FetchDescriptor<StoredLesson>(
             predicate: #Predicate { $0.id == id }

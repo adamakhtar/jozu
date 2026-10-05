@@ -132,6 +132,7 @@ final class StoredLesson {
     var updatedAt: Date
     var nextReviewAt: Date
     var intervalDays: Int
+    var discussJSON: Data?
 
     init(from lesson: Lesson) {
         id = lesson.id
@@ -148,6 +149,31 @@ final class StoredLesson {
         updatedAt = lesson.updatedAt
         nextReviewAt = lesson.nextReviewAt
         intervalDays = lesson.intervalDays
+        discussJSON = nil
+    }
+
+    func apply(_ lesson: Lesson) {
+        kindRaw = lesson.kind.rawValue
+        title = lesson.title
+        sense = lesson.sense
+        focus = lesson.focus
+        context = lesson.context
+        examplesJSON = Self.encode(lesson.examples)
+        contrastsJSON = Self.encode(lesson.contrasts)
+        pitfallsJSON = Self.encode(lesson.pitfalls)
+        sourceMessageID = lesson.sourceMessageID
+        updatedAt = lesson.updatedAt
+        nextReviewAt = lesson.nextReviewAt
+        intervalDays = lesson.intervalDays
+    }
+
+    func discussMessages() -> [Message] {
+        guard let discussJSON else { return [] }
+        return Self.decode(discussJSON, as: [Message].self) ?? []
+    }
+
+    func setDiscussMessages(_ messages: [Message]) {
+        discussJSON = Self.encode(messages)
     }
 
     func asLesson() -> Lesson {
