@@ -202,31 +202,13 @@ struct ChatView: View {
             }
 
             HStack(alignment: .bottom, spacing: 10) {
-                TextField(
-                    "",
+                JozuComposerField(
                     text: draftBinding,
-                    prompt: Text(session?.pendingPhoto == nil
+                    placeholder: session?.pendingPhoto == nil
                         ? "Ask about \(settings.targetLanguage)…"
-                        : "Ask about the photo, or send as-is…")
-                        .foregroundStyle(JozuTheme.muted),
-                    axis: .vertical
+                        : "Ask about the photo, or send as-is…"
                 )
-                    .textFieldStyle(.plain)
-                    .font(.system(size: 14))
-                    .foregroundStyle(JozuTheme.ink)
-                    .lineLimit(1...6)
-                    .focused($composerFocused)
-                    .onSubmit {
-                        Task { await session?.send() }
-                    }
-                    .padding(.horizontal, 12)
-                    .padding(.vertical, 9)
-                    .background(JozuTheme.card)
-                    .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
-                    .overlay(
-                        RoundedRectangle(cornerRadius: 8, style: .continuous)
-                            .stroke(JozuTheme.line, lineWidth: 1)
-                    )
+                .focused($composerFocused)
 
                 Button {
                     importingPhoto = true
@@ -305,7 +287,7 @@ struct ChatView: View {
 
     private var footerHint: String {
         if settings.hasAPIKey {
-            return "⌘↩ to send. Remember a turn, then Review from Memories."
+            return "Return for a new line, ⌘↩ to send. Remember a turn, then Review from Memories."
         }
         return "No API key — chat, remember, and review are stubbed on this Mac."
     }

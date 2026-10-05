@@ -1,6 +1,6 @@
 # Status
 
-Last updated: 2026-10-05 (S6: review probe + coarse reschedule)
+Last updated: 2026-10-05 (composer: taller field, Return = newline; review answer stays for the grade)
 
 ## What exists
 

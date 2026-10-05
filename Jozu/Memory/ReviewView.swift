@@ -74,12 +74,14 @@ struct ReviewView: View {
                 status("Writing a question…")
             case .grading:
                 prompt
+                answerField
                 status("Grading…")
             case .answering:
                 prompt
                 answerField
             case .result:
                 prompt
+                answerField
                 result
             case .done:
                 Text("That’s the lot for now.")
@@ -126,25 +128,12 @@ struct ReviewView: View {
     }
 
     private var answerField: some View {
-        TextField(
-            "",
+        JozuComposerField(
             text: $session.answer,
-            prompt: Text("Your answer…").foregroundStyle(JozuTheme.muted),
-            axis: .vertical
+            placeholder: "Your answer…",
+            isEditable: session.phase == .answering
         )
-        .textFieldStyle(.plain)
-        .font(.system(size: 14))
-        .foregroundStyle(JozuTheme.ink)
-        .lineLimit(3...10)
         .focused($answerFocused)
-        .padding(.horizontal, 12)
-        .padding(.vertical, 9)
-        .background(JozuTheme.card)
-        .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
-        .overlay(
-            RoundedRectangle(cornerRadius: 8, style: .continuous)
-                .stroke(JozuTheme.line, lineWidth: 1)
-        )
     }
 
     @ViewBuilder

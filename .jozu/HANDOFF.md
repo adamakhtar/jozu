@@ -10,6 +10,8 @@ Slice: 6 — review probe
 
 S6 is on this branch (PR #2). Due memories open a probe: LLM writes a question, you answer, it grades miss/partial/pass/easy, `nextReviewAt` moves by 1/2/7/14 days. Stub probe/grade if there is no key.
 
+Composer is a taller 16pt field. Return inserts a newline; ⌘↩ sends (chat) or checks (review). The review answer stays visible through grading and the judgment.
+
 Pull `cursor/persist-stream-1eb4`, ⌘R. Remember a turn, open **Review** (or Memories → Review due), answer, confirm it lands under Later.
 
 This Linux agent cannot compile or launch the app.
