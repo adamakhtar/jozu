@@ -2,6 +2,12 @@
 
 Append-only. Newest first. Supersede; do not rewrite history.
 
+## 2026-10-05 — Peek is on-demand AX selected text
+
+**Choice:** Mac only. Button in the composer. User grants Accessibility. Session allowlist of bundle IDs (cleared on quit). Read `kAXSelectedTextAttribute` from the focused element of an allowlisted app. Show the exact string, let them edit, confirm, then attach to the next turn as `Text from {app} (selected):`. Log app name + text on the turn. Cap 4000 characters. No ScreenCaptureKit. No clipboard scrape. No background observer of content (only last-other-app for the “Allow and read” shortcut).
+
+**Why:** Gap 6 was open. Always-on capture is a hole. Per-turn grant without an allowlist is tedious. Session allowlist + confirm is the middle: you pick Word once this sitting, you still see what leaves the machine. Window screenshots wait.
+
 ## 2026-10-05 — Discuss is lesson-scoped; merge rewrites the guide
 
 **Choice:** Discuss is not the inbox. Transcript lives on `StoredLesson` (`discussJSON`). Chat chrome shows a banner (title + sense). Done returns to the inbox; Clear in that mode wipes the discussion only.

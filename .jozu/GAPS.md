@@ -9,7 +9,7 @@ Questions that are open. Defaults in `STATUS.md` are in force until answered.
 3. **Provider** — OpenAI-compatible is wired. Which host and model will you actually use?
 4. **Review cadence numbers** — miss → 1 day, partial → 2, pass → 7, easy → 14. Open if you want different numbers.
 5. **Lesson body schema** — Headword/pattern, sense, focus (struggle), examples, contrasts, pitfalls. Exact JSON fields still open at implement time.
-6. **Peek UX** — Menu “use frontmost app”, always-on allowlist, or per-turn grant?
+6. **Peek UX** — Locked 2026-10-05: on-demand + session allowlist + confirm. See `DECISIONS.md`.
 7. **Data** — Local-only forever, or iCloud later?
 8. **Name / tone** — Jozu (上手) from the repo. Keep?
 
@@ -19,8 +19,8 @@ Questions that are open. Defaults in `STATUS.md` are in force until answered.
 - Sandbox + Accessibility + ScreenCaptureKit entitlements will need a real usage-description story and possibly notarization later.
 - Multilingual OCR: Vision is strong for CJK / Latin; some scripts need language hints (`recognitionLanguages`).
 - Grading: ask the model for JSON `{grade, reason, next_hint}` and parse it. Don’t regex the prose.
-- Peek security: show a live preview of exactly what will be sent, require confirm, log it on the turn.
+- Peek security: preview the exact selection, confirm, log app + text on the turn. Session allowlist. No full-desktop capture.
 
 ## Non-gaps (decided)
 
-See `DECISIONS.md`. Native Swift, protocol LLM, Vision OCR, drip review, scoped Mac peek, `.jozu/` handoff, S8 Lessons (picker, one lesson per sense, review that sense + struggle, chat-only updates, key gate).
+See `DECISIONS.md`. Native Swift, protocol LLM, Vision OCR, drip review, scoped Mac peek (AX selected text, session allowlist, confirm), `.jozu/` handoff, S8 Lessons (picker, one lesson per sense, review that sense + struggle, chat-only updates, key gate).

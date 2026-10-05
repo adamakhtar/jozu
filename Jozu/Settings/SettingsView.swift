@@ -26,6 +26,14 @@ struct SettingsView: View {
                     .font(.callout)
                     .foregroundStyle(.secondary)
             }
+
+            #if os(macOS)
+            Section("Peek") {
+                Text("Selected text from apps you allow this session. Accessibility is required. Jozu never captures the whole screen.")
+                    .font(.callout)
+                    .foregroundStyle(.secondary)
+            }
+            #endif
         }
         .formStyle(.grouped)
         .padding()

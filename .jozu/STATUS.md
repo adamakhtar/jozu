@@ -1,6 +1,6 @@
 # Status
 
-Last updated: 2026-10-05 (S8b Discuss + merge)
+Last updated: 2026-10-05 (S7 Mac scoped peek)
 
 ## What exists
 
@@ -11,12 +11,13 @@ Last updated: 2026-10-05 (S8b Discuss + merge)
 - **Lessons:** Remember distills chat into a structured guide (word sense / grammar / nuance). Picker if several points. Search. Old memory crumbs migrate on first launch.
 - **Discuss:** from a lesson, a scoped thread (stored on the lesson, not the inbox). Tutor sees the current guide. **Update lesson** merges the talk into that guide. Review schedule is left alone.
 - **Review** on a lesson: probe that sense + struggle. Guide hidden until after the grade. Coarse `nextReviewAt`.
+- **Peek (Mac):** selected text from an allowlisted app via Accessibility. Session allowlist. Preview + confirm. Logged on the turn. No screen capture.
 - No key / 401: LLM calls blocked; alert points at Settings.
 
 ## What does not exist
 
 - Parent Word → senses
-- Screen / other-app peek
+- Window / desktop screenshot peek
 - Multiple inbox threads
 - Stub tutor
 - iPhone target

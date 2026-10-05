@@ -8,6 +8,9 @@ final class ChatSession {
     var lessons: [Lesson] = []
     var draft = ""
     var pendingPhoto: PendingPhoto?
+    var pendingPeek: PendingPeek?
+    var peekAllowlist: Set<String> = []
+    var lastOtherApp: PeekTarget?
     var isSending = false
     var rememberingID: UUID?
     var isMerging = false
@@ -24,6 +27,9 @@ final class ChatSession {
     private let settings: AppSettings
     private let store: ChatStore
     private let lessonStore: LessonStore
+    #if os(macOS)
+    private let peekMonitor = PeekMonitor()
+    #endif
 
     init(settings: AppSettings, store: ChatStore, lessonStore: LessonStore) {
         self.settings = settings
@@ -31,6 +37,11 @@ final class ChatSession {
         self.lessonStore = lessonStore
         self.messages = store.loadMessages()
         self.lessons = lessonStore.all()
+        #if os(macOS)
+        peekMonitor.onChange = { [weak self] target in
+            self?.lastOtherApp = target
+        }
+        #endif
     }
 
     var dueCount: Int {
@@ -50,7 +61,8 @@ final class ChatSession {
         guard !isSending, !isMerging else { return false }
         if pendingPhoto?.isRecognizing == true { return false }
         let hasText = !draft.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
-        return hasText || pendingPhoto != nil
+        let hasPeek = pendingPeek.map { !$0.text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty } ?? false
+        return hasText || pendingPhoto != nil || hasPeek
     }
 
     var canClear: Bool {
@@ -85,7 +97,7 @@ final class ChatSession {
 
     var scrollAnchor: String {
         let msgs = displayedMessages
-        return "\(msgs.count)|\(msgs.last?.content.count ?? 0)|\(isSending)|\(pendingPhoto != nil)|\(discussingLessonID?.uuidString ?? "")"
+        return "\(msgs.count)|\(msgs.last?.content.count ?? 0)|\(isSending)|\(pendingPhoto != nil)|\(pendingPeek != nil)|\(discussingLessonID?.uuidString ?? "")"
     }
 
     func isSaved(messageID: UUID) -> Bool {
@@ -103,6 +115,7 @@ final class ChatSession {
             notice = nil
             draft = ""
             pendingPhoto = nil
+            pendingPeek = nil
         }
         requestChatPane = true
     }
@@ -116,6 +129,7 @@ final class ChatSession {
         errorMessage = nil
         draft = ""
         pendingPhoto = nil
+        pendingPeek = nil
     }
 
     func attachImage(data: Data) async {
@@ -150,6 +164,27 @@ final class ChatSession {
 
     func discardPhoto() {
         pendingPhoto = nil
+    }
+
+    func isPeekAllowed(_ bundleID: String) -> Bool {
+        peekAllowlist.contains(bundleID)
+    }
+
+    func allowPeek(_ bundleID: String) {
+        peekAllowlist.insert(bundleID)
+    }
+
+    func revokePeek(_ bundleID: String) {
+        peekAllowlist.remove(bundleID)
+    }
+
+    func confirmPeek(_ peek: PendingPeek) {
+        pendingPeek = peek
+        errorMessage = nil
+    }
+
+    func discardPeek() {
+        pendingPeek = nil
     }
 
     func remember(from assistant: Message) async {
@@ -196,16 +231,20 @@ final class ChatSession {
         }
 
         let photo = pendingPhoto
+        let peek = pendingPeek
         draft = ""
         pendingPhoto = nil
+        pendingPeek = nil
         errorMessage = nil
         notice = nil
 
         let user = Message(
             role: .user,
-            content: Self.compose(question: question, ocr: photo?.ocrText),
+            content: Self.compose(question: question, ocr: photo?.ocrText, peek: peek),
             photoJPEG: photo?.thumbnailJPEG,
-            ocrText: photo?.ocrText
+            ocrText: photo?.ocrText,
+            peekText: peek?.text,
+            peekAppName: peek?.appName
         )
 
         if discussingLessonID != nil {
@@ -277,12 +316,14 @@ final class ChatSession {
             errorMessage = nil
             notice = nil
             pendingPhoto = nil
+            pendingPeek = nil
             return
         }
         do {
             try store.deleteAllMessages()
             messages = []
             pendingPhoto = nil
+            pendingPeek = nil
             errorMessage = nil
             notice = nil
         } catch {
@@ -415,15 +456,27 @@ final class ChatSession {
         messages.last(where: { $0.role == .assistant && !$0.content.isEmpty })
     }
 
-    private static func compose(question: String, ocr: String?) -> String {
+    private static func compose(question: String, ocr: String?, peek: PendingPeek?) -> String {
+        var parts: [String] = []
+        if let peek {
+            let text = peek.text.trimmingCharacters(in: .whitespacesAndNewlines)
+            if !text.isEmpty {
+                parts.append("Text from \(peek.appName) (selected):\n\(text)")
+            }
+        }
         let reading = ocr?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
-        if reading.isEmpty {
-            return question.isEmpty ? "What should I learn from this photo?" : question
+        if !reading.isEmpty {
+            parts.append("Text from photo:\n\(reading)")
         }
         if question.isEmpty {
-            return "Text from photo:\n\(reading)\n\nWhat does this say? Explain anything I should learn from it."
+            if parts.isEmpty {
+                return "What should I learn from this photo?"
+            }
+            parts.append("What should I learn from this?")
+        } else {
+            parts.append(question)
         }
-        return "Text from photo:\n\(reading)\n\n\(question)"
+        return parts.joined(separator: "\n\n")
     }
 
     private func replaceLast(_ message: Message, inbox: Bool) {
