@@ -23,4 +23,4 @@ Questions that are open. Defaults in `STATUS.md` are in force until answered.
 
 ## Non-gaps (decided)
 
-See `DECISIONS.md`. Native Swift, protocol LLM, Vision OCR, drip review, scoped Mac peek, `.jozu/` handoff, S8 Lessons shape (picker, one lesson per sense, review that sense + struggle, chat-only updates, key gate). Waiting on an explicit go to build S8.
+See `DECISIONS.md`. Native Swift, protocol LLM, Vision OCR, drip review, scoped Mac peek, `.jozu/` handoff, S8 Lessons (picker, one lesson per sense, review that sense + struggle, chat-only updates later, key gate).

@@ -5,28 +5,32 @@ import Observation
 @Observable
 final class ChatSession {
     var messages: [Message] = []
-    var memories: [MemoryItem] = []
+    var lessons: [Lesson] = []
     var draft = ""
     var pendingPhoto: PendingPhoto?
     var isSending = false
     var rememberingID: UUID?
     var errorMessage: String?
     var notice: String?
+    var needsSettings = false
+    var candidates: [LessonCandidate] = []
+    var openedLessonID: UUID?
+    private var pendingSourceID: UUID?
 
     private let settings: AppSettings
     private let store: ChatStore
-    private let memoryStore: MemoryStore
+    private let lessonStore: LessonStore
 
-    init(settings: AppSettings, store: ChatStore, memoryStore: MemoryStore) {
+    init(settings: AppSettings, store: ChatStore, lessonStore: LessonStore) {
         self.settings = settings
         self.store = store
-        self.memoryStore = memoryStore
+        self.lessonStore = lessonStore
         self.messages = store.loadMessages()
-        self.memories = memoryStore.all()
+        self.lessons = lessonStore.all()
     }
 
     var dueCount: Int {
-        memories.filter(\.isDue).count
+        lessons.filter(\.isDue).count
     }
 
     var canSend: Bool {
@@ -36,10 +40,10 @@ final class ChatSession {
         return hasText || pendingPhoto != nil
     }
 
-    private func reviewQueue(startingAt itemID: UUID?) -> [MemoryItem] {
-        let due = memories.filter(\.isDue).sorted { $0.nextReviewAt < $1.nextReviewAt }
+    private func reviewQueue(startingAt itemID: UUID?) -> [Lesson] {
+        let due = lessons.filter(\.isDue).sorted { $0.nextReviewAt < $1.nextReviewAt }
         if let itemID {
-            guard let item = memories.first(where: { $0.id == itemID }) else { return due }
+            guard let item = lessons.first(where: { $0.id == itemID }) else { return due }
             return [item] + due.filter { $0.id != itemID }
         }
         return due
@@ -48,11 +52,11 @@ final class ChatSession {
     func makeReviewSession(startingAt itemID: UUID?) -> ReviewSession? {
         let queue = reviewQueue(startingAt: itemID)
         guard !queue.isEmpty else { return nil }
-        return ReviewSession(queue: queue, settings: settings, memoryStore: memoryStore)
+        return ReviewSession(queue: queue, settings: settings, lessonStore: lessonStore)
     }
 
-    func refreshMemories() {
-        memories = memoryStore.all()
+    func refreshLessons() {
+        lessons = lessonStore.all()
     }
 
     var scrollAnchor: String {
@@ -60,7 +64,7 @@ final class ChatSession {
     }
 
     func isSaved(messageID: UUID) -> Bool {
-        memories.contains { $0.sourceMessageID == messageID }
+        lessons.contains { $0.sourceMessageID == messageID }
     }
 
     func attachImage(data: Data) async {
@@ -99,32 +103,44 @@ final class ChatSession {
 
     func remember(from assistant: Message) async {
         errorMessage = nil
-        if isSaved(messageID: assistant.id) {
-            notice = "Already saved from this turn."
-            return
-        }
-
         rememberingID = assistant.id
         defer { rememberingID = nil }
-
-        let user = precedingUser(before: assistant)
-        await saveMemory(user: user?.content ?? "", assistant: assistant.content, source: assistant.id)
+        await distill(source: assistant.id)
     }
 
-    func deleteMemory(_ id: UUID) {
+    func chooseCandidate(_ candidate: LessonCandidate) async {
+        await generate(candidate, source: pendingSourceID)
+        candidates = []
+        pendingSourceID = nil
+    }
+
+    func cancelCandidates() {
+        candidates = []
+        pendingSourceID = nil
+        rememberingID = nil
+    }
+
+    func deleteLesson(_ id: UUID) {
         do {
-            try memoryStore.delete(id)
-            memories = memoryStore.all()
+            try lessonStore.delete(id)
+            lessons = lessonStore.all()
+            if openedLessonID == id { openedLessonID = nil }
         } catch {
-            errorMessage = error.localizedDescription
+            present(error)
         }
     }
 
     func send() async {
         let question = draft.trimmingCharacters(in: .whitespacesAndNewlines)
         guard canSend else { return }
-        let photo = pendingPhoto
+        do {
+            try settings.requireKey()
+        } catch {
+            present(error)
+            return
+        }
 
+        let photo = pendingPhoto
         draft = ""
         pendingPhoto = nil
         errorMessage = nil
@@ -139,21 +155,14 @@ final class ChatSession {
         messages.append(user)
         persist(user)
 
-        var request = LLMRequestSettings(settings)
         if RememberIntent.matches(question) {
-            let saved: MemoryItem?
-            if let lastAssistant = lastAssistant() {
-                saved = await saveMemory(
-                    user: question,
-                    assistant: lastAssistant.content,
-                    source: lastAssistant.id
-                )
-            } else {
-                saved = await saveMemory(user: question, assistant: "", source: user.id)
+            await distill(source: lastAssistant()?.id ?? user.id)
+            if candidates.isEmpty, let notice {
+                let assistant = Message(role: .assistant, content: notice)
+                messages.append(assistant)
+                persist(assistant)
             }
-            if let saved {
-                request.extraInstruction = "A review item was just saved: [\(saved.kind.label)] \(saved.target) — \(saved.note). Confirm in one short line."
-            }
+            return
         }
 
         let outbound = messages
@@ -162,9 +171,9 @@ final class ChatSession {
         isSending = true
         defer { isSending = false }
 
-        let client = LLMServiceFactory.make(hasAPIKey: settings.hasAPIKey)
-
         do {
+            let client = try LLMServiceFactory.make(hasAPIKey: settings.hasAPIKey)
+            let request = LLMRequestSettings(settings)
             for try await chunk in client.stream(messages: outbound, settings: request) {
                 assistant.content += chunk
                 replaceLast(assistant)
@@ -180,7 +189,7 @@ final class ChatSession {
                 removeLastIfAssistantPlaceholder()
             }
         } catch {
-            errorMessage = error.localizedDescription
+            present(error)
             if assistant.content.isEmpty {
                 removeLastIfAssistantPlaceholder()
             } else {
@@ -197,43 +206,65 @@ final class ChatSession {
             errorMessage = nil
             notice = nil
         } catch {
-            errorMessage = error.localizedDescription
+            present(error)
         }
     }
 
-    @discardableResult
-    private func saveMemory(user: String, assistant: String, source: UUID) async -> MemoryItem? {
-        if isSaved(messageID: source) {
-            notice = "Already saved from this turn."
-            return memories.first { $0.sourceMessageID == source }
-        }
-
-        let request = LLMRequestSettings(settings)
-        let client = LLMServiceFactory.make(hasAPIKey: settings.hasAPIKey)
+    private func distill(source: UUID?) async {
+        pendingSourceID = source
         do {
-            let draft = try await MemoryExtractor.extract(
-                user: user,
-                assistant: assistant,
+            try settings.requireKey()
+            let client = try LLMServiceFactory.make(hasAPIKey: settings.hasAPIKey)
+            let request = LLMRequestSettings(settings)
+            let found = try await LessonDistiller.candidates(
+                messages: messages,
                 settings: request,
                 client: client
             )
-            let item = try memoryStore.insert(draft, sourceMessageID: source)
-            memories = memoryStore.all()
-            notice = "Saved \(item.kind.label.lowercased()): \(item.target)"
-            return item
+            if found.isEmpty { throw ReviewError.noCandidates }
+            if found.count == 1 {
+                await generate(found[0], source: source)
+                pendingSourceID = nil
+                return
+            }
+            candidates = found
+            notice = "Choose which point to save as a lesson."
         } catch {
-            errorMessage = "Could not save that: \(error.localizedDescription)"
-            return nil
+            pendingSourceID = nil
+            present(error)
+        }
+    }
+
+    private func generate(_ candidate: LessonCandidate, source: UUID?) async {
+        do {
+            try settings.requireKey()
+            let client = try LLMServiceFactory.make(hasAPIKey: settings.hasAPIKey)
+            let request = LLMRequestSettings(settings)
+            var lesson = try await LessonDistiller.generate(
+                candidate: candidate,
+                messages: messages,
+                settings: request,
+                client: client
+            )
+            lesson.sourceMessageID = source
+            let saved = try lessonStore.insert(lesson)
+            lessons = lessonStore.all()
+            openedLessonID = saved.id
+            notice = "Saved lesson: \(saved.title) — \(saved.subtitle)"
+        } catch {
+            present(error)
+        }
+    }
+
+    private func present(_ error: Error) {
+        errorMessage = error.localizedDescription
+        if let llm = error as? LLMError, llm.needsSettings {
+            needsSettings = true
         }
     }
 
     private func lastAssistant() -> Message? {
         messages.last(where: { $0.role == .assistant && !$0.content.isEmpty })
-    }
-
-    private func precedingUser(before message: Message) -> Message? {
-        guard let index = messages.firstIndex(where: { $0.id == message.id }) else { return nil }
-        return messages[..<index].last(where: { $0.role == .user })
     }
 
     private static func compose(question: String, ocr: String?) -> String {

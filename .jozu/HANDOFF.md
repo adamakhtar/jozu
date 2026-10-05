@@ -3,30 +3,24 @@
 Read this first in a new conversation. Then `STATUS.md`.
 
 Updated: 2026-10-05
-Branch: `cursor/persist-stream-1eb4`
-Slice: 6 shipped; **S8 Lessons locked, not built**
+Branch: `cursor/s8-lessons-7cbf`
+Slice: 8 — Lessons (first slice)
 
 ## Now
 
-S6 review probe is on PR #2. Product next is **S8 Lessons** (pulled forward; S7 peek waits). Decisions are in `DECISIONS.md` (2026-10-05 Lessons). Do not start S8 until the user says go — this conversation only locked it and updated docs.
+S8 first slice is on this branch. Chat | Lessons are full screens. Remember distills a stretch of chat into a structured lesson (word sense / grammar / nuance). Several candidates → picker. Search the library. Review probes that sense + struggle; the guide is hidden until after the grade. No API key / 401 blocks LLM and points at Settings. No stub tutor.
 
-When building S8, first slice only:
+Discuss + merge (S8b) is not in this slice.
 
-- Full-screen **Chat | Lessons** (not sheets).
-- Remember → if multiple candidates, picker → one structured lesson (word sense / grammar / nuance).
-- Search the library. Subtitle = sense/focus so two かける rows differ.
-- Review stays a drip on the lesson: that sense + struggle. Hide the guide until after the grade.
-- No key / 401: block LLM, alert, Settings. Remove the stub tutor.
-- Chat-only updates and lesson-scoped Discuss are the **following** slice.
+Pull `cursor/s8-lessons-7cbf`, ⌘R, add a key, ask about a word, Remember, confirm the lesson, Review.
 
 This Linux agent cannot compile or launch the app.
 
 ## Next (do in this order)
 
-1. User says go on S8.
-2. S8 first slice (library + distill + search + full screens + key gate).
-3. S8b Discuss this lesson + merge update.
-4. S7 Mac-only scoped peek.
+1. Confirm S8 on a Mac.
+2. S8b — Discuss this lesson + merge update.
+3. S7 Mac-only scoped peek.
 
 ## Do not
 
@@ -42,7 +36,6 @@ This Linux agent cannot compile or launch the app.
 
 ## Blocked on the user
 
-- Say go on S8.
-- LLM provider + API key (required once the stub is removed).
+- LLM provider + API key (required).
 - Confirmation of native / target language defaults (currently English → Japanese).
 - What “Jev” meant for scoring.

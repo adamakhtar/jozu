@@ -50,17 +50,17 @@ struct LLMRequestSettings: Sendable {
         When the user includes "Text from photo:", that is on-device OCR and may contain mistakes. \
         Prefer the intended reading. Do not mention OCR unless the text is genuinely ambiguous.
 
-        Chat turns persist on this device. Review items are saved on this device when \
-        the learner uses Remember or asks to remember something. If a review item was \
-        just saved, you will be told — confirm it in one short line. Do not claim you \
-        cannot save.
+        Chat turns persist on this device. Lessons are saved on this device when \
+        the learner uses Remember. If a lesson was just saved, you will be told — \
+        confirm it in one short line. Do not claim you cannot save.
         """
     }
 }
 
 enum LLMServiceFactory {
-    static func make(hasAPIKey: Bool) -> any LLMServicing {
-        hasAPIKey ? OpenAICompatibleLLMService() : StubLLMService()
+    static func make(hasAPIKey: Bool) throws -> any LLMServicing {
+        guard hasAPIKey else { throw LLMError.missingAPIKey }
+        return OpenAICompatibleLLMService()
     }
 }
 
@@ -153,7 +153,7 @@ struct OpenAICompatibleLLMService: LLMServicing {
         let status = (response as? HTTPURLResponse)?.statusCode ?? 0
         guard (200...299).contains(status) else {
             let body = String(data: data, encoding: .utf8) ?? ""
-            throw LLMError.http(status: status, body: body)
+            throw LLMError.from(status: status, body: body)
         }
 
         let decoded = try JSONDecoder().decode(ChatCompletionResponse.self, from: data)
@@ -193,7 +193,7 @@ struct OpenAICompatibleLLMService: LLMServicing {
                 data.append(byte)
             }
             let body = String(data: data, encoding: .utf8) ?? ""
-            throw LLMError.http(status: status, body: body)
+            throw LLMError.from(status: status, body: body)
         }
 
         var received = false
@@ -246,12 +246,23 @@ struct OpenAICompatibleLLMService: LLMServicing {
 }
 
 enum LLMError: LocalizedError {
+    case missingAPIKey
+    case unauthorized
     case invalidBaseURL
     case emptyResponse
     case http(status: Int, body: String)
 
+    static func from(status: Int, body: String) -> LLMError {
+        if status == 401 { return .unauthorized }
+        return .http(status: status, body: body)
+    }
+
     var errorDescription: String? {
         switch self {
+        case .missingAPIKey:
+            return "Add an API key in Settings to use Jozu."
+        case .unauthorized:
+            return "That API key was rejected. Check Settings."
         case .invalidBaseURL:
             return "API base URL is invalid."
         case .emptyResponse:
@@ -260,6 +271,13 @@ enum LLMError: LocalizedError {
             let snippet = body.trimmingCharacters(in: .whitespacesAndNewlines)
             if snippet.isEmpty { return "The model request failed (\(status))." }
             return "The model request failed (\(status)): \(snippet.prefix(240))"
+        }
+    }
+
+    var needsSettings: Bool {
+        switch self {
+        case .missingAPIKey, .unauthorized: return true
+        default: return false
         }
     }
 }

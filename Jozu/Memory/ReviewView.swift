@@ -1,63 +1,5 @@
 import SwiftUI
 
-struct MemorySheetView: View {
-    @Bindable var session: ChatSession
-    var startDue: Bool
-    @State private var review: ReviewSession?
-    @State private var showReview = false
-    @State private var didAutoStart = false
-
-    var body: some View {
-        NavigationStack {
-            MemoryListView(
-                items: session.memories,
-                onDelete: { session.deleteMemory($0) },
-                onReview: { id in startReview(itemID: id) }
-            )
-            .toolbar {
-                ToolbarItem(placement: .automatic) {
-                    if session.dueCount > 0 {
-                        Button("Review due") {
-                            startReview(itemID: nil)
-                        }
-                    }
-                }
-            }
-            .navigationDestination(isPresented: $showReview) {
-                if let review {
-                    ReviewView(session: review) {
-                        finishReview()
-                    }
-                }
-            }
-        }
-        .onChange(of: showReview) {
-            if !showReview {
-                review = nil
-                session.refreshMemories()
-            }
-        }
-        .task {
-            guard startDue, !didAutoStart else { return }
-            didAutoStart = true
-            startReview(itemID: nil)
-        }
-    }
-
-    private func startReview(itemID: UUID?) {
-        guard let next = session.makeReviewSession(startingAt: itemID) else { return }
-        review = next
-        showReview = true
-        Task { await next.begin() }
-    }
-
-    private func finishReview() {
-        showReview = false
-        review = nil
-        session.refreshMemories()
-    }
-}
-
 struct ReviewView: View {
     @Bindable var session: ReviewSession
     var onClose: () -> Void
@@ -65,9 +7,14 @@ struct ReviewView: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 16) {
-            Text(session.progressCaption)
-                .font(.system(size: 12))
-                .foregroundStyle(JozuTheme.muted)
+            HStack {
+                Text("Review · \(session.progressCaption)")
+                    .font(.system(size: 12))
+                    .foregroundStyle(JozuTheme.muted)
+                Spacer()
+                Button("Close") { onClose() }
+                    .buttonStyle(.borderless)
+            }
 
             switch session.phase {
             case .writingQuestion:
@@ -99,17 +46,10 @@ struct ReviewView: View {
 
             controls
         }
-        .padding(20)
+        .padding(24)
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
         .background(JozuTheme.paper)
         .preferredColorScheme(.light)
-        .navigationTitle("Review")
-        .navigationBarBackButtonHidden(true)
-        .toolbar {
-            ToolbarItem(placement: .cancellationAction) {
-                Button("Close") { onClose() }
-            }
-        }
         .onChange(of: session.phase) {
             if session.phase == .answering {
                 answerFocused = true
@@ -158,14 +98,20 @@ struct ReviewView: View {
                         .textSelection(.enabled)
                 }
 
-                if let item = session.current {
-                    Text(item.target)
-                        .font(.system(size: 13, weight: .medium))
+                if let lesson = session.current {
+                    Text(lesson.title)
+                        .font(.system(size: 15, weight: .medium))
                         .foregroundStyle(JozuTheme.ink)
                         .textSelection(.enabled)
-                    if !item.note.isEmpty {
-                        Text(item.note)
-                            .font(.system(size: 12))
+                    if !lesson.sense.isEmpty {
+                        Text(lesson.sense)
+                            .font(.system(size: 13))
+                            .foregroundStyle(JozuTheme.ink)
+                            .textSelection(.enabled)
+                    }
+                    if !lesson.focus.isEmpty {
+                        Text(lesson.focus)
+                            .font(.system(size: 13))
                             .foregroundStyle(JozuTheme.muted)
                             .textSelection(.enabled)
                     }
