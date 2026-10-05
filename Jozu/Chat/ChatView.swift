@@ -289,7 +289,7 @@ struct ChatView: View {
         if settings.hasAPIKey {
             return "Return for a new line, ⌘↩ to send. Remember a turn, then Review from Memories."
         }
-        return "No API key — chat, remember, and review are stubbed on this Mac."
+        return "No API key — replies are stubbed. Return for a new line, ⌘↩ to send."
     }
 
     private var draftBinding: Binding<String> {
