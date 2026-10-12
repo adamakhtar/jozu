@@ -20,14 +20,15 @@
 		A11A0000000000000000200B /* StoredModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = A11A0000000000000000100C /* StoredModels.swift */; };
 		A11A0000000000000000200C /* ChatStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = A11A0000000000000000100D /* ChatStore.swift */; };
 		A11A0000000000000000200D /* VisionOCR.swift in Sources */ = {isa = PBXBuildFile; fileRef = A11A0000000000000000100E /* VisionOCR.swift */; };
-		A11A0000000000000000200E /* MemoryItem.swift in Sources */ = {isa = PBXBuildFile; fileRef = A11A0000000000000000100F /* MemoryItem.swift */; };
-		A11A0000000000000000200F /* MemoryStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = A11A00000000000000001010 /* MemoryStore.swift */; };
-		A11A00000000000000002010 /* MemoryExtractor.swift in Sources */ = {isa = PBXBuildFile; fileRef = A11A00000000000000001011 /* MemoryExtractor.swift */; };
-		A11A00000000000000002011 /* MemoryListView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A11A00000000000000001012 /* MemoryListView.swift */; };
 		A11A00000000000000002012 /* ReviewModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = A11A00000000000000001013 /* ReviewModels.swift */; };
 		A11A00000000000000002013 /* ReviewEngine.swift in Sources */ = {isa = PBXBuildFile; fileRef = A11A00000000000000001014 /* ReviewEngine.swift */; };
 		A11A00000000000000002014 /* ReviewSession.swift in Sources */ = {isa = PBXBuildFile; fileRef = A11A00000000000000001015 /* ReviewSession.swift */; };
 		A11A00000000000000002015 /* ReviewView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A11A00000000000000001016 /* ReviewView.swift */; };
+		A11A00000000000000002016 /* Lesson.swift in Sources */ = {isa = PBXBuildFile; fileRef = A11A00000000000000001017 /* Lesson.swift */; };
+		A11A00000000000000002017 /* LessonStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = A11A00000000000000001018 /* LessonStore.swift */; };
+		A11A00000000000000002018 /* LessonDistiller.swift in Sources */ = {isa = PBXBuildFile; fileRef = A11A00000000000000001019 /* LessonDistiller.swift */; };
+		A11A00000000000000002019 /* LessonLibraryView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A11A0000000000000000101A /* LessonLibraryView.swift */; };
+		A11A0000000000000000201A /* JozuShell.swift in Sources */ = {isa = PBXBuildFile; fileRef = A11A0000000000000000101B /* JozuShell.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -46,14 +47,15 @@
 		A11A0000000000000000100C /* StoredModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StoredModels.swift; sourceTree = "<group>"; };
 		A11A0000000000000000100D /* ChatStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChatStore.swift; sourceTree = "<group>"; };
 		A11A0000000000000000100E /* VisionOCR.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VisionOCR.swift; sourceTree = "<group>"; };
-		A11A0000000000000000100F /* MemoryItem.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MemoryItem.swift; sourceTree = "<group>"; };
-		A11A00000000000000001010 /* MemoryStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MemoryStore.swift; sourceTree = "<group>"; };
-		A11A00000000000000001011 /* MemoryExtractor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MemoryExtractor.swift; sourceTree = "<group>"; };
-		A11A00000000000000001012 /* MemoryListView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MemoryListView.swift; sourceTree = "<group>"; };
 		A11A00000000000000001013 /* ReviewModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReviewModels.swift; sourceTree = "<group>"; };
 		A11A00000000000000001014 /* ReviewEngine.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReviewEngine.swift; sourceTree = "<group>"; };
 		A11A00000000000000001015 /* ReviewSession.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReviewSession.swift; sourceTree = "<group>"; };
 		A11A00000000000000001016 /* ReviewView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReviewView.swift; sourceTree = "<group>"; };
+		A11A00000000000000001017 /* Lesson.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Lesson.swift; sourceTree = "<group>"; };
+		A11A00000000000000001018 /* LessonStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LessonStore.swift; sourceTree = "<group>"; };
+		A11A00000000000000001019 /* LessonDistiller.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LessonDistiller.swift; sourceTree = "<group>"; };
+		A11A0000000000000000101A /* LessonLibraryView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LessonLibraryView.swift; sourceTree = "<group>"; };
+		A11A0000000000000000101B /* JozuShell.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = JozuShell.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -95,6 +97,7 @@
 				A11A0000000000000000000E /* Persistence */,
 				A11A0000000000000000000F /* OCR */,
 				A11A00000000000000000010 /* Memory */,
+				A11A00000000000000000011 /* Lesson */,
 				A11A0000000000000000100A /* Assets.xcassets */,
 				A11A0000000000000000100B /* Jozu.entitlements */,
 			);
@@ -156,16 +159,24 @@
 		A11A00000000000000000010 /* Memory */ = {
 			isa = PBXGroup;
 			children = (
-				A11A0000000000000000100F /* MemoryItem.swift */,
-				A11A00000000000000001010 /* MemoryStore.swift */,
-				A11A00000000000000001011 /* MemoryExtractor.swift */,
-				A11A00000000000000001012 /* MemoryListView.swift */,
 				A11A00000000000000001013 /* ReviewModels.swift */,
 				A11A00000000000000001014 /* ReviewEngine.swift */,
 				A11A00000000000000001015 /* ReviewSession.swift */,
 				A11A00000000000000001016 /* ReviewView.swift */,
 			);
 			path = Memory;
+			sourceTree = "<group>";
+		};
+		A11A00000000000000000011 /* Lesson */ = {
+			isa = PBXGroup;
+			children = (
+				A11A00000000000000001017 /* Lesson.swift */,
+				A11A00000000000000001018 /* LessonStore.swift */,
+				A11A00000000000000001019 /* LessonDistiller.swift */,
+				A11A0000000000000000101A /* LessonLibraryView.swift */,
+				A11A0000000000000000101B /* JozuShell.swift */,
+			);
+			path = Lesson;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -249,14 +260,15 @@
 				A11A0000000000000000200B /* StoredModels.swift in Sources */,
 				A11A0000000000000000200C /* ChatStore.swift in Sources */,
 				A11A0000000000000000200D /* VisionOCR.swift in Sources */,
-				A11A0000000000000000200E /* MemoryItem.swift in Sources */,
-				A11A0000000000000000200F /* MemoryStore.swift in Sources */,
-				A11A00000000000000002010 /* MemoryExtractor.swift in Sources */,
-				A11A00000000000000002011 /* MemoryListView.swift in Sources */,
 				A11A00000000000000002012 /* ReviewModels.swift in Sources */,
 				A11A00000000000000002013 /* ReviewEngine.swift in Sources */,
 				A11A00000000000000002014 /* ReviewSession.swift in Sources */,
 				A11A00000000000000002015 /* ReviewView.swift in Sources */,
+				A11A00000000000000002016 /* Lesson.swift in Sources */,
+				A11A00000000000000002017 /* LessonStore.swift in Sources */,
+				A11A00000000000000002018 /* LessonDistiller.swift in Sources */,
+				A11A00000000000000002019 /* LessonLibraryView.swift in Sources */,
+				A11A0000000000000000201A /* JozuShell.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

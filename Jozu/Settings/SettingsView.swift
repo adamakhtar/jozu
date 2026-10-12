@@ -22,7 +22,7 @@ struct SettingsView: View {
                     .textContentType(.URL)
                 TextField("Model", text: $settings.model)
                 SecureField("API key", text: $settings.apiKey)
-                Text("OpenAI-compatible. Leave the key empty to use the offline stub.")
+                Text("OpenAI-compatible. Required for chat, lessons, and review.")
                     .font(.callout)
                     .foregroundStyle(.secondary)
             }

@@ -2,7 +2,7 @@
 
 Append-only. Newest first. Supersede; do not rewrite history.
 
-## 2026-10-05 — Lessons replace memory crumbs (locked, not built)
+## 2026-10-05 — Lessons replace memory crumbs
 
 **Choice:** The saved unit is a **lesson**: one usable distinction (one word-sense, one grammar use, or one nuance/contrast). Not a `{kind, target, note}` crumb. Remember distills a bounded stretch of chat into a structured guide. If several candidates are in that stretch, list them and the learner picks. Search the library. Chat | Lessons are full screens, not sheets. Settings may stay a sheet.
 
