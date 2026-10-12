@@ -1,14 +1,15 @@
 import Foundation
 
 enum ReviewEngine {
-    static func probe(
+    static func makeKit(
         lesson: Lesson,
         settings: LLMRequestSettings,
         client: any LLMServicing
-    ) async throws -> String {
+    ) async throws -> [ReviewProbe] {
+        let expected = ReviewKitPlanner.patterns(for: lesson)
         var request = settings
         request.systemOverride = """
-        You write ONE review probe for a language learner.
+        You write \(expected.count) review probes for a language learner, one per requested pattern, in that order.
         Native language: \(settings.nativeLanguage).
         They are studying \(settings.targetLanguage).
 
@@ -23,25 +24,31 @@ enum ReviewEngine {
         Contrasts: \(Self.encode(lesson.contrasts))
         Pitfalls: \(lesson.pitfalls.joined(separator: "; "))
 
-        Write a question that makes them use this point, not only recognize it.
-        Do not reveal a model answer. Do not quote the whole guide.
+        Requested patterns:
+        \(Self.patternList(expected))
+
+        Rules:
+        - Distinct patterns. Do not write three translations of the same sentence.
+        - Write a question that makes them use this point, not only recognize it.
+        - Do not reveal a model answer. Do not quote the guide, examples, or pitfalls as the key.
+        - For production items, do not name the headword unless the pattern is transform, cloze, or repair and the frame must be shown.
+        - Question text in \(settings.nativeLanguage). Include any \(settings.targetLanguage) they must see (dialogue lines, cloze, the sentence to transform).
 
         Reply with JSON only, no markdown:
-        {"question":"..."}
-        Question in \(settings.nativeLanguage). Include any \(settings.targetLanguage) they must see.
+        {"probes":[\(expected.map { "{\"pattern\":\"\($0.rawValue)\",\"question\":\"...\"}" }.joined(separator: ","))]}
         """
 
         let raw = try await client.complete(
-            messages: [Message(role: .user, content: "Write the probe now.")],
+            messages: [Message(role: .user, content: "Write the probes now.")],
             settings: request
         )
-        if let question = parseProbe(raw) { return question }
+        if let kit = parseKit(raw, expected: expected), !kit.isEmpty { return kit }
         throw ReviewError.unreadableProbe
     }
 
     static func grade(
         lesson: Lesson,
-        question: String,
+        probe: ReviewProbe,
         answer: String,
         settings: LLMRequestSettings,
         client: any LLMServicing
@@ -51,6 +58,9 @@ enum ReviewEngine {
         You grade one language-learning review answer against this lesson's sense.
         Native language: \(settings.nativeLanguage).
         They are studying \(settings.targetLanguage).
+
+        Pattern: \(probe.pattern.rawValue)
+        \(probe.pattern.gradeRubric)
 
         Grades:
         - miss: blank, wrong, or unusable
@@ -75,7 +85,8 @@ enum ReviewEngine {
                     Title: \(lesson.title)
                     Sense: \(lesson.sense)
                     Focus: \(lesson.focus)
-                    Question: \(question)
+                    Pattern: \(probe.pattern.rawValue)
+                    Question: \(probe.question)
                     Answer: \(answer)
                     """
                 ),
@@ -86,15 +97,37 @@ enum ReviewEngine {
         throw ReviewError.unreadableGrade
     }
 
-    private static func encode(_ contrasts: [LessonContrast]) -> String {
-        contrasts.map { "\($0.item): \($0.difference)" }.joined(separator: "; ")
-    }
-
-    private static func parseProbe(_ raw: String) -> String? {
+    static func parseKit(_ raw: String, expected: [ReviewPattern]) -> [ReviewProbe]? {
         guard let object = JSONSlice.object(in: raw) else { return nil }
+        if let rows = object["probes"] as? [[String: Any]] {
+            let questions = rows.compactMap { row -> String? in
+                let question = (row["question"] as? String)?
+                    .trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+                return question.isEmpty ? nil : question
+            }
+            guard !questions.isEmpty else { return nil }
+            let count = min(questions.count, max(expected.count, 1))
+            var probes: [ReviewProbe] = []
+            for index in 0..<count {
+                let pattern = expected.indices.contains(index) ? expected[index] : .produce
+                probes.append(ReviewProbe(pattern: pattern, question: questions[index]))
+            }
+            return probes
+        }
         let question = (object["question"] as? String)?
             .trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
-        return question.isEmpty ? nil : question
+        guard !question.isEmpty else { return nil }
+        return [ReviewProbe(pattern: expected.first ?? .produce, question: question)]
+    }
+
+    private static func patternList(_ patterns: [ReviewPattern]) -> String {
+        patterns.enumerated().map { index, pattern in
+            "\(index + 1). \(pattern.rawValue): \(pattern.instruction)"
+        }.joined(separator: "\n")
+    }
+
+    private static func encode(_ contrasts: [LessonContrast]) -> String {
+        contrasts.map { "\($0.item): \($0.difference)" }.joined(separator: "; ")
     }
 
     private static func parseGrade(_ raw: String) -> ReviewJudgment? {
@@ -125,7 +158,7 @@ enum ReviewError: LocalizedError {
     var errorDescription: String? {
         switch self {
         case .unreadableProbe:
-            return "The model did not return a usable question."
+            return "The model did not return usable questions."
         case .unreadableGrade:
             return "The model did not return a usable grade."
         case .unreadableLesson:
