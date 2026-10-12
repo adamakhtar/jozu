@@ -2,6 +2,12 @@
 
 Append-only. Newest first. Supersede; do not rewrite history.
 
+## 2026-10-12 — Don’t trust `supportsOnDeviceRecognition` on Mac
+
+**Choice:** Do not refuse to start dictation because `SFSpeechRecognizer.supportsOnDeviceRecognition` is false. Resolve English/Japanese against `supportedLocales()` (prefer `en-GB`, then any `en_*` the Mac has). Still set `requiresOnDeviceRecognition` on the request so audio never goes to a server. Only surface “not installed” if the recognition task itself fails (e.g. assistant error 1101).
+
+**Why:** Keyboard → Dictation being on does not make that flag true. It is locale-specific and often stays false on macOS even when on-device works. We were also asking for `en-GB` while Dictation’s “English” is commonly US English — a different pack.
+
 ## 2026-10-12 — English dictation is British (`en-GB`)
 
 **Choice:** English speech locale is `en-GB`, not `en-US`. Japanese stays `ja-JP`. OCR is unchanged (`en-US` is still Vision’s English hint).

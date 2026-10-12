@@ -29,7 +29,32 @@ enum SpeechLocale {
     }
 
     static func locale(forLanguageName name: String) -> Locale {
-        Locale(identifier: identifier(forLanguageName: name))
+        resolved(from: Locale(identifier: identifier(forLanguageName: name)))
+    }
+
+    /// Pick a Speech locale the Mac actually has. Keyboard → Dictation may list
+    /// "English" as US English; we still prefer `en-GB` when that pack exists.
+    static func resolved(from preferred: Locale) -> Locale {
+        let wanted = languageCode(preferred)
+        let preferredID = canonical(preferred.identifier)
+        let matches = SFSpeechRecognizer.supportedLocales().filter { languageCode($0) == wanted }
+        guard !matches.isEmpty else { return preferred }
+        if let exact = matches.first(where: { canonical($0.identifier) == preferredID }) {
+            return exact
+        }
+        if wanted == "en", let gb = matches.first(where: { canonical($0.identifier).hasPrefix("en-gb") }) {
+            return gb
+        }
+        return matches.sorted { canonical($0.identifier) < canonical($1.identifier) }.first ?? preferred
+    }
+
+    private static func languageCode(_ locale: Locale) -> String {
+        let id = canonical(locale.identifier)
+        return String(id.split(separator: "-").first ?? Substring(id))
+    }
+
+    private static func canonical(_ identifier: String) -> String {
+        identifier.replacingOccurrences(of: "_", with: "-").lowercased()
     }
 
     static func shortLabel(forLanguageName name: String) -> String {
@@ -57,7 +82,7 @@ enum DictationError: LocalizedError {
         case .recognizerUnavailable:
             return "Dictation isn’t available for that language on this Mac."
         case .onDeviceUnavailable(let name):
-            return "On-device dictation for \(name) isn’t installed. Download the language in System Settings → Keyboard → Dictation. Audio stays on this Mac — it is not sent to a server."
+            return "Couldn’t start on-device \(name). Add that exact language in System Settings → Keyboard → Dictation (British English is United Kingdom, not US) and allow Jozu under Privacy & Security → Speech Recognition."
         case .noInputDevice:
             return "No microphone found."
         }
@@ -135,7 +160,7 @@ final class DictationController {
         errorMessage = nil
         do {
             try await Self.authorize()
-            let recognizer = try Self.makeRecognizer(locale: locale)
+            let recognizer = try await Self.makeRecognizer(locale: locale)
             self.recognizer = recognizer
             self.onTranscript = onTranscript
             wantsListening = true
@@ -207,11 +232,15 @@ final class DictationController {
         }
         if let error {
             let ns = error as NSError
-            if ns.domain == "kAFAssistantErrorDomain", ns.code == 216 || ns.code == 1110 {
+            if Self.isNoSpeech(ns) {
                 restartTask()
                 return
             }
-            errorMessage = error.localizedDescription
+            if Self.isOnDeviceAssetError(ns), let recognizer {
+                errorMessage = DictationError.onDeviceUnavailable(Self.displayName(recognizer.locale)).errorDescription
+            } else {
+                errorMessage = error.localizedDescription
+            }
             stop()
         }
     }
@@ -243,19 +272,38 @@ final class DictationController {
         guard microphone else { throw DictationError.microphoneDenied }
     }
 
-    private static func makeRecognizer(locale: Locale) throws -> SFSpeechRecognizer {
-        guard let recognizer = SFSpeechRecognizer(locale: locale) else {
+    private static func makeRecognizer(locale: Locale) async throws -> SFSpeechRecognizer {
+        let resolved = SpeechLocale.resolved(from: locale)
+        guard let recognizer = SFSpeechRecognizer(locale: resolved) else {
             throw DictationError.recognizerUnavailable
+        }
+        recognizer.defaultTaskHint = .dictation
+        // On macOS this flag is often false even when Keyboard → Dictation is
+        // on and on-device requests work. Give the asset catalog a moment,
+        // then proceed anyway and keep requiresOnDeviceRecognition on the request.
+        if !recognizer.isAvailable || !recognizer.supportsOnDeviceRecognition {
+            try await Task.sleep(nanoseconds: 400_000_000)
         }
         guard recognizer.isAvailable else {
             throw DictationError.recognizerUnavailable
         }
-        guard recognizer.supportsOnDeviceRecognition else {
-            let name = Locale.current.localizedString(forIdentifier: locale.identifier) ?? locale.identifier
-            throw DictationError.onDeviceUnavailable(name)
-        }
-        recognizer.defaultTaskHint = .dictation
         return recognizer
+    }
+
+    private static func isNoSpeech(_ error: NSError) -> Bool {
+        error.domain == "kAFAssistantErrorDomain" && (error.code == 216 || error.code == 1110)
+    }
+
+    private static func isOnDeviceAssetError(_ error: NSError) -> Bool {
+        if error.domain == "kAFAssistantErrorDomain", error.code == 1101 {
+            return true
+        }
+        let text = error.localizedDescription.lowercased()
+        return text.contains("on-device") || text.contains("on device")
+    }
+
+    private static func displayName(_ locale: Locale) -> String {
+        Locale.current.localizedString(forIdentifier: locale.identifier) ?? locale.identifier
     }
 }
 
