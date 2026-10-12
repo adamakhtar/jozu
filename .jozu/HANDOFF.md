@@ -2,23 +2,25 @@
 
 Read this first in a new conversation. Then `STATUS.md`.
 
-Updated: 2026-10-05
-Branch: `cursor/s8-lessons-7cbf`
-Slice: 8 — Lessons (first slice)
+Updated: 2026-10-12
+Branch: `cursor/review-kit-f89a`
+Slice: Review kit (production probes)
 
 ## Now
 
-S8 first slice is on this branch. Chat | Lessons are full screens. Remember distills a stretch of chat into a structured lesson (word sense / grammar / nuance). Several candidates → picker. Search the library. Review probes that sense + struggle; the guide is hidden until after the grade. No API key / 401 blocks LLM and points at Settings. No stub tutor.
+Review writes a 3-probe kit in one LLM call (patterns from lesson kind + focus/contrasts/pitfalls). One at a time. Grade each. Guide hidden until the last probe. Interval from the worst grade. Skip leaves the lesson due.
+
+S8 first slice is on `main`. Chat | Lessons are full screens. Remember distills a stretch of chat into a structured lesson (word sense / grammar / nuance). Several candidates → picker. Search the library. No API key / 401 blocks LLM and points at Settings. No stub tutor.
 
 Discuss + merge (S8b) is not in this slice.
 
-Pull `cursor/s8-lessons-7cbf`, ⌘R, add a key, ask about a word, Remember, confirm the lesson, Review.
+Pull this branch, ⌘R, add a key, Review a lesson: three distinct questions, guide after the third, interval from the weakest answer.
 
 This Linux agent cannot compile or launch the app.
 
 ## Next (do in this order)
 
-1. Confirm S8 on a Mac.
+1. Confirm S8 + this review kit on a Mac.
 2. S8b — Discuss this lesson + merge update.
 3. S7 Mac-only scoped peek.
 

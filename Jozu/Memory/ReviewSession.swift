@@ -14,7 +14,6 @@ final class ReviewSession {
 
     private(set) var queue: [Lesson]
     private(set) var current: Lesson?
-    private(set) var question = ""
     var answer = ""
     private(set) var judgment: ReviewJudgment?
     private(set) var intervalDays: Int?
@@ -26,13 +25,50 @@ final class ReviewSession {
     private let settings: AppSettings
     private let lessonStore: LessonStore
     private var cursor = 0
+    private var kit: [ReviewProbe] = []
+    private var itemIndex = 0
+    private var itemGrades: [Int: ReviewGrade] = [:]
+    private var scheduled = false
 
-    var hasMore: Bool {
+    var question: String {
+        guard kit.indices.contains(itemIndex) else { return "" }
+        return kit[itemIndex].question
+    }
+
+    var currentProbe: ReviewProbe? {
+        guard kit.indices.contains(itemIndex) else { return nil }
+        return kit[itemIndex]
+    }
+
+    var itemPosition: Int { itemIndex + 1 }
+
+    var itemTotal: Int {
+        kit.isEmpty ? ReviewKitPlanner.size : kit.count
+    }
+
+    var hasMoreItems: Bool {
+        itemIndex + 1 < kit.count
+    }
+
+    var hasMoreLessons: Bool {
         cursor + 1 < queue.count
     }
 
+    /// Guide and interval stay hidden until the last probe of this lesson is graded.
+    var revealsGuide: Bool {
+        phase == .result && !hasMoreItems && scheduled
+    }
+
+    var canRetryItem: Bool {
+        phase == .result && hasMoreItems && (judgment?.grade == .miss || judgment?.grade == .partial)
+    }
+
     var progressCaption: String {
-        "\(min(position, total)) of \(total)"
+        let item = "\(min(itemPosition, itemTotal)) of \(itemTotal)"
+        if total > 1 {
+            return "Lesson \(min(position, total)) of \(total) · \(item)"
+        }
+        return item
     }
 
     var isBusy: Bool {
@@ -41,7 +77,7 @@ final class ReviewSession {
 
     var canSubmit: Bool {
         phase == .answering
-            && !question.isEmpty
+            && currentProbe != nil
             && !answer.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
             && !isBusy
     }
@@ -59,11 +95,11 @@ final class ReviewSession {
             phase = .done
             return
         }
-        await writeQuestion()
+        await writeKit()
     }
 
     func submit() async {
-        guard canSubmit, let lesson = current else { return }
+        guard canSubmit, let lesson = current, let probe = currentProbe else { return }
         errorMessage = nil
         phase = .grading
         do {
@@ -72,20 +108,16 @@ final class ReviewSession {
             let client = try LLMServiceFactory.make(hasAPIKey: settings.hasAPIKey)
             let judged = try await ReviewEngine.grade(
                 lesson: lesson,
-                question: question,
+                probe: probe,
                 answer: answer,
                 settings: request,
                 client: client
             )
-            let planned = ReviewScheduler.apply(grade: judged.grade)
-            let updated = try lessonStore.schedule(
-                lesson.id,
-                intervalDays: planned.intervalDays,
-                nextReviewAt: planned.nextReviewAt
-            )
-            current = updated
+            itemGrades[itemIndex] = judged.grade
             judgment = judged
-            intervalDays = planned.intervalDays
+            if !hasMoreItems {
+                try commitSchedule()
+            }
             phase = .result
         } catch {
             errorMessage = error.localizedDescription
@@ -94,7 +126,39 @@ final class ReviewSession {
     }
 
     func advance() async {
-        guard hasMore else {
+        if hasMoreItems {
+            itemIndex += 1
+            answer = ""
+            judgment = nil
+            intervalDays = nil
+            errorMessage = nil
+            phase = .answering
+            return
+        }
+        await advanceLesson()
+    }
+
+    func skip() async {
+        await advanceLesson()
+    }
+
+    func retry() async {
+        errorMessage = nil
+        if kit.isEmpty {
+            await writeKit()
+        }
+    }
+
+    func retryItem() {
+        guard canRetryItem else { return }
+        judgment = nil
+        intervalDays = nil
+        errorMessage = nil
+        phase = .answering
+    }
+
+    private func advanceLesson() async {
+        guard hasMoreLessons else {
             phase = .done
             current = nil
             return
@@ -102,44 +166,46 @@ final class ReviewSession {
         cursor += 1
         position = cursor + 1
         current = queue[cursor]
-        answer = ""
-        question = ""
-        judgment = nil
-        intervalDays = nil
-        errorMessage = nil
-        await writeQuestion()
+        await writeKit()
     }
 
-    func skip() async {
-        await advance()
-    }
-
-    func retry() async {
-        errorMessage = nil
-        if question.isEmpty {
-            await writeQuestion()
-        }
-    }
-
-    private func writeQuestion() async {
+    private func writeKit() async {
         guard let lesson = current else {
             phase = .done
             return
         }
         phase = .writingQuestion
         answer = ""
-        question = ""
         judgment = nil
         intervalDays = nil
+        errorMessage = nil
+        kit = []
+        itemIndex = 0
+        itemGrades = [:]
+        scheduled = false
         do {
             try settings.requireKey()
             let request = LLMRequestSettings(settings)
             let client = try LLMServiceFactory.make(hasAPIKey: settings.hasAPIKey)
-            question = try await ReviewEngine.probe(lesson: lesson, settings: request, client: client)
+            kit = try await ReviewEngine.makeKit(lesson: lesson, settings: request, client: client)
             phase = .answering
         } catch {
             errorMessage = error.localizedDescription
             phase = .answering
         }
+    }
+
+    private func commitSchedule() throws {
+        guard let lesson = current else { return }
+        let ordered = (0..<kit.count).compactMap { itemGrades[$0] }
+        let combined = ReviewScheduler.combine(ordered)
+        let planned = ReviewScheduler.apply(grade: combined)
+        current = try lessonStore.schedule(
+            lesson.id,
+            intervalDays: planned.intervalDays,
+            nextReviewAt: planned.nextReviewAt
+        )
+        intervalDays = planned.intervalDays
+        scheduled = true
     }
 }

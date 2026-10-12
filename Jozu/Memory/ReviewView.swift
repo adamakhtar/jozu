@@ -18,7 +18,7 @@ struct ReviewView: View {
 
             switch session.phase {
             case .writingQuestion:
-                status("Writing a question…")
+                status("Writing questions…")
             case .grading:
                 prompt
                 answerField
@@ -98,7 +98,7 @@ struct ReviewView: View {
                         .textSelection(.enabled)
                 }
 
-                if let lesson = session.current {
+                if session.revealsGuide, let lesson = session.current {
                     Text(lesson.title)
                         .font(.system(size: 15, weight: .medium))
                         .foregroundStyle(JozuTheme.ink)
@@ -117,8 +117,12 @@ struct ReviewView: View {
                     }
                 }
 
-                if let days = session.intervalDays {
+                if session.revealsGuide, let days = session.intervalDays {
                     Text(days == 1 ? "Again tomorrow." : "Again in \(days) days.")
+                        .font(.system(size: 12))
+                        .foregroundStyle(JozuTheme.muted)
+                } else if session.hasMoreItems {
+                    Text("\(session.itemTotal - session.itemPosition) more in this lesson.")
                         .font(.system(size: 12))
                         .foregroundStyle(JozuTheme.muted)
                 }
@@ -142,16 +146,16 @@ struct ReviewView: View {
             case .writingQuestion, .grading:
                 EmptyView()
             case .answering:
-                if session.question.isEmpty {
+                if session.currentProbe == nil {
                     Button("Retry") {
                         Task { await session.retry() }
                     }
-                    Button("Skip") {
+                    Button("Skip lesson") {
                         Task { await session.skip() }
                     }
                     .buttonStyle(.borderless)
                 } else {
-                    Button("Skip") {
+                    Button("Skip lesson") {
                         Task { await session.skip() }
                     }
                     .buttonStyle(.borderless)
@@ -162,8 +166,19 @@ struct ReviewView: View {
                     .disabled(!session.canSubmit)
                 }
             case .result:
-                if session.hasMore {
+                if session.canRetryItem {
+                    Button("Retry") {
+                        session.retryItem()
+                    }
+                    .buttonStyle(.borderless)
+                }
+                if session.hasMoreItems {
                     Button("Next") {
+                        Task { await session.advance() }
+                    }
+                    .keyboardShortcut(.return, modifiers: .command)
+                } else if session.hasMoreLessons {
+                    Button("Next lesson") {
                         Task { await session.advance() }
                     }
                     .keyboardShortcut(.return, modifiers: .command)
