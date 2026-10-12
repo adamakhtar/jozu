@@ -10,6 +10,37 @@ enum DictationLanguage: String, CaseIterable, Identifiable, Sendable {
     var id: String { rawValue }
 }
 
+enum SpeechLocale {
+    static func identifier(forLanguageName name: String) -> String {
+        let key = name.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
+        switch key {
+        case "japanese", "日本語", "jp", "ja", "ja-jp", "ja_jp":
+            return "ja-JP"
+        case "english", "en", "en-us", "en_us", "en-gb", "en_gb",
+             "british english", "uk english", "american english":
+            return "en-GB"
+        default:
+            if let vision = VisionLanguage.codes(for: name).first {
+                if vision.lowercased().hasPrefix("en") { return "en-GB" }
+                return vision
+            }
+            return "en-GB"
+        }
+    }
+
+    static func locale(forLanguageName name: String) -> Locale {
+        Locale(identifier: identifier(forLanguageName: name))
+    }
+
+    static func shortLabel(forLanguageName name: String) -> String {
+        let id = identifier(forLanguageName: name).lowercased()
+        if id.hasPrefix("ja") { return "JA" }
+        if id.hasPrefix("en") { return "EN" }
+        let language = id.split { $0 == "-" || $0 == "_" }.first.map(String.init) ?? id
+        return language.uppercased()
+    }
+}
+
 enum DictationError: LocalizedError {
     case microphoneDenied
     case speechDenied

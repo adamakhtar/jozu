@@ -17,7 +17,7 @@ Questions that are open. Defaults in `STATUS.md` are in force until answered.
 
 - No Mac in this environment, so S0 is unverified.
 - Sandbox + Accessibility + ScreenCaptureKit entitlements will need a real usage-description story and possibly notarization later.
-- On-device Speech: ja-JP / en-US packs must be installed (System Settings → Keyboard → Dictation). `supportsOnDeviceRecognition` may be false until the pack is there; do not fall back to network.
+- On-device Speech: ja-JP / en-GB packs must be installed (System Settings → Keyboard → Dictation). `supportsOnDeviceRecognition` may be false until the pack is there; do not fall back to network.
 - First Mac check of dictation + thread switching; Linux cannot compile the app.
 - Multilingual OCR: Vision is strong for CJK / Latin; some scripts need language hints (`recognitionLanguages`).
 - Grading: ask the model for JSON `{grade, reason, next_hint}` and parse it. Don’t regex the prose.

@@ -135,12 +135,15 @@ struct ChatView: View {
                 .focused($composerFocused)
 
                 Picker("Dictate in", selection: dictationLanguageBinding) {
-                    Text(localeShort(settings.nativeLanguage)).tag(DictationLanguage.native)
-                    Text(localeShort(settings.targetLanguage)).tag(DictationLanguage.target)
+                    Text(SpeechLocale.shortLabel(forLanguageName: settings.nativeLanguage))
+                        .tag(DictationLanguage.native)
+                    Text(SpeechLocale.shortLabel(forLanguageName: settings.targetLanguage))
+                        .tag(DictationLanguage.target)
                 }
                 .pickerStyle(.segmented)
-                .frame(width: 92)
-                .help("Language to transcribe. On this Mac, not a server.")
+                .labelsHidden()
+                .fixedSize()
+                .help("Language to transcribe. English is British. On this Mac, not a server.")
 
                 Button {
                     Task { await toggleDictation() }
@@ -308,15 +311,7 @@ struct ChatView: View {
     }
 
     private func dictationLocale() -> Locale {
-        let name = dictationLanguageName
-        let code = VisionLanguage.codes(for: name).first ?? "en-US"
-        return Locale(identifier: code)
-    }
-
-    private func localeShort(_ name: String) -> String {
-        let code = VisionLanguage.codes(for: name).first ?? name
-        let language = code.split(separator: "-").first.map(String.init) ?? code
-        return language.uppercased()
+        SpeechLocale.locale(forLanguageName: dictationLanguageName)
     }
 
     private var pendingOCRBinding: Binding<String> {

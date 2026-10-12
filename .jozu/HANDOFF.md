@@ -8,9 +8,9 @@ Slice: conversations + on-device dictation, on top of S8 Lessons
 
 ## Now
 
-Clear is gone. **New** starts another thread; past chats are under the Jozu title. Dictation is on-device Apple Speech (English / Japanese, native/target locales) — not an audio API. Mic inserts into the current message; **New with dictation** starts a blank thread already listening.
+Clear is gone. **New** starts another thread; past chats are under the Jozu title. Dictation is on-device Apple Speech (British English `en-GB` / Japanese `ja-JP`) — not an audio API. Mic inserts into the current message; **New with dictation** starts a blank thread already listening.
 
-This Linux agent cannot compile or launch the app. Verify on a Mac: New keeps the old thread, switch back via the title menu, dictate EN and JA into part of a draft, confirm no network transcription.
+This Linux agent cannot compile or launch the app. Verify on a Mac: New keeps the old thread, switch back via the title menu, dictate EN and JA into part of a draft, confirm no network transcription. The EN/JA toggle must show **EN**, not a clipped mark.
 
 ## Next (do in this order)
 
@@ -36,4 +36,4 @@ This Linux agent cannot compile or launch the app. Verify on a Mac: New keeps th
 - LLM provider + API key (required).
 - Confirmation of native / target language defaults (currently English → Japanese).
 - What “Jev” meant for scoring.
-- First Mac check of on-device ja-JP / en-US Speech packs.
+- First Mac check of on-device ja-JP / en-GB Speech packs.

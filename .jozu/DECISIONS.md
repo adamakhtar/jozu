@@ -2,6 +2,12 @@
 
 Append-only. Newest first. Supersede; do not rewrite history.
 
+## 2026-10-12 — English dictation is British (`en-GB`)
+
+**Choice:** English speech locale is `en-GB`, not `en-US`. Japanese stays `ja-JP`. OCR is unchanged (`en-US` is still Vision’s English hint).
+
+**Why:** The learner asked for British English. Apple’s Speech pack is regional; US English produces US spellings.
+
 ## 2026-10-12 — On-device Speech dictation, not an audio API
 
 **Choice:** Apple Speech (`SFSpeechRecognizer` + `AVAudioEngine`) with `requiresOnDeviceRecognition = true`. Native and target locales (defaults: English `en-US`, Japanese `ja-JP`). No transcription HTTP API, no Whisper cloud, no bundled whisper.cpp model. If on-device recognition isn’t available, fail and point at System Settings → Keyboard → Dictation — never fall back to Apple’s servers.
