@@ -4,7 +4,7 @@ Last updated: 2026-10-12 (Review kit)
 
 ## What exists
 
-- Native macOS SwiftUI app **Jozu**.
+- Native macOS SwiftUI app **Jozu**. Debug is Sign to Run Locally (`-`); packaging may inject `get-task-allow`.
 - Full-screen **Chat | Lessons**. Settings still a sheet.
 - Chat, reply-language toggle, streamed replies, one persisted thread. API key in the data-protection keychain (Application Support fallback).
 - Photo attach / drop / paste → on-device Vision OCR. Image stays local.
