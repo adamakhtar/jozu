@@ -29,6 +29,7 @@
 		A11A00000000000000002018 /* LessonDistiller.swift in Sources */ = {isa = PBXBuildFile; fileRef = A11A00000000000000001019 /* LessonDistiller.swift */; };
 		A11A00000000000000002019 /* LessonLibraryView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A11A0000000000000000101A /* LessonLibraryView.swift */; };
 		A11A0000000000000000201A /* JozuShell.swift in Sources */ = {isa = PBXBuildFile; fileRef = A11A0000000000000000101B /* JozuShell.swift */; };
+		A11A0000000000000000201B /* DictationController.swift in Sources */ = {isa = PBXBuildFile; fileRef = A11A0000000000000000101C /* DictationController.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -56,6 +57,7 @@
 		A11A00000000000000001019 /* LessonDistiller.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LessonDistiller.swift; sourceTree = "<group>"; };
 		A11A0000000000000000101A /* LessonLibraryView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LessonLibraryView.swift; sourceTree = "<group>"; };
 		A11A0000000000000000101B /* JozuShell.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = JozuShell.swift; sourceTree = "<group>"; };
+		A11A0000000000000000101C /* DictationController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DictationController.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -98,6 +100,7 @@
 				A11A0000000000000000000F /* OCR */,
 				A11A00000000000000000010 /* Memory */,
 				A11A00000000000000000011 /* Lesson */,
+				A11A00000000000000000012 /* Speech */,
 				A11A0000000000000000100A /* Assets.xcassets */,
 				A11A0000000000000000100B /* Jozu.entitlements */,
 			);
@@ -177,6 +180,14 @@
 				A11A0000000000000000101B /* JozuShell.swift */,
 			);
 			path = Lesson;
+			sourceTree = "<group>";
+		};
+		A11A00000000000000000012 /* Speech */ = {
+			isa = PBXGroup;
+			children = (
+				A11A0000000000000000101C /* DictationController.swift */,
+			);
+			path = Speech;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -269,6 +280,7 @@
 				A11A00000000000000002018 /* LessonDistiller.swift in Sources */,
 				A11A00000000000000002019 /* LessonLibraryView.swift in Sources */,
 				A11A0000000000000000201A /* JozuShell.swift in Sources */,
+				A11A0000000000000000201B /* DictationController.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -335,6 +347,8 @@
 				INFOPLIST_KEY_CFBundleDisplayName = Jozu;
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.education";
 				INFOPLIST_KEY_NSHumanReadableCopyright = "";
+				INFOPLIST_KEY_NSMicrophoneUsageDescription = "Jozu uses the microphone to dictate English or Japanese. Audio is transcribed on this Mac.";
+				INFOPLIST_KEY_NSSpeechRecognitionUsageDescription = "Jozu transcribes dictation on this Mac so you can speak English or Japanese into a message. Audio is not sent to a server.";
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/../Frameworks",
@@ -363,6 +377,8 @@
 				INFOPLIST_KEY_CFBundleDisplayName = Jozu;
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.education";
 				INFOPLIST_KEY_NSHumanReadableCopyright = "";
+				INFOPLIST_KEY_NSMicrophoneUsageDescription = "Jozu uses the microphone to dictate English or Japanese. Audio is transcribed on this Mac.";
+				INFOPLIST_KEY_NSSpeechRecognitionUsageDescription = "Jozu transcribes dictation on this Mac so you can speak English or Japanese into a message. Audio is not sent to a server.";
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/../Frameworks",

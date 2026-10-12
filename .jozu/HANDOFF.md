@@ -2,29 +2,26 @@
 
 Read this first in a new conversation. Then `STATUS.md`.
 
-Updated: 2026-10-05
-Branch: `cursor/s8-lessons-7cbf`
-Slice: 8 — Lessons (first slice)
+Updated: 2026-10-12
+Branch: `cursor/conversations-dictation-75f6`
+Slice: conversations + on-device dictation, on top of S8 Lessons
 
 ## Now
 
-S8 first slice is on this branch. Chat | Lessons are full screens. Remember distills a stretch of chat into a structured lesson (word sense / grammar / nuance). Several candidates → picker. Search the library. Review probes that sense + struggle; the guide is hidden until after the grade. No API key / 401 blocks LLM and points at Settings. No stub tutor.
+Clear is gone. **New** starts another thread; past chats are under the Jozu title. Dictation is on-device Apple Speech (British English `en-GB` / Japanese `ja-JP`) — not an audio API. Mic inserts into the current message; **New with dictation** starts a blank thread already listening.
 
-Discuss + merge (S8b) is not in this slice.
-
-Pull `cursor/s8-lessons-7cbf`, ⌘R, add a key, ask about a word, Remember, confirm the lesson, Review.
-
-This Linux agent cannot compile or launch the app.
+This Linux agent cannot compile or launch the app. Verify on a Mac: mic opens Keyboard → Dictation and **spoken words appear in the composer**. Pick English/Japanese in the dictation bubble if needed. New still keeps old threads.
 
 ## Next (do in this order)
 
-1. Confirm S8 on a Mac.
+1. Confirm this slice on a Mac (threads + on-device mic).
 2. S8b — Discuss this lesson + merge update.
 3. S7 Mac-only scoped peek.
 
 ## Do not
 
 - Introduce React, Electron, or a JS webview shell.
+- Send microphone audio to a server (Apple or otherwise). If on-device Speech fails, tell the user to install the language pack.
 - Add accounts, sync, or a server until local-first chat + memory work.
 - Implement full SRS / SuperMemo.
 - Capture the whole screen by default.
@@ -39,3 +36,4 @@ This Linux agent cannot compile or launch the app.
 - LLM provider + API key (required).
 - Confirmation of native / target language defaults (currently English → Japanese).
 - What “Jev” meant for scoring.
+- First Mac check of on-device ja-JP / en-GB Speech packs.

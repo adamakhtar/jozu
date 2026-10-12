@@ -15,6 +15,10 @@ final class ChatSession {
     var needsSettings = false
     var candidates: [LessonCandidate] = []
     var openedLessonID: UUID?
+    var conversations: [ConversationSummary] = []
+    var currentConversationID = UUID()
+    var conversationTitle = "New conversation"
+    var beginDictation = false
     private var pendingSourceID: UUID?
 
     private let settings: AppSettings
@@ -27,6 +31,7 @@ final class ChatSession {
         self.lessonStore = lessonStore
         self.messages = store.loadMessages()
         self.lessons = lessonStore.all()
+        syncConversationMeta()
     }
 
     var dueCount: Int {
@@ -198,13 +203,34 @@ final class ChatSession {
         }
     }
 
-    func clear() {
+    func startNewConversation(beginDictation: Bool = false) {
+        resetComposer()
         do {
-            try store.deleteAllMessages()
-            messages = []
-            pendingPhoto = nil
+            try store.startNew()
+            messages = store.loadMessages()
+            syncConversationMeta()
             errorMessage = nil
             notice = nil
+            candidates = []
+            rememberingID = nil
+            self.beginDictation = beginDictation
+        } catch {
+            present(error)
+        }
+    }
+
+    func openConversation(_ id: UUID) {
+        guard id != currentConversationID else { return }
+        resetComposer()
+        do {
+            try store.open(id)
+            messages = store.loadMessages()
+            syncConversationMeta()
+            errorMessage = nil
+            notice = nil
+            candidates = []
+            rememberingID = nil
+            beginDictation = false
         } catch {
             present(error)
         }
@@ -291,8 +317,20 @@ final class ChatSession {
     private func persist(_ message: Message) {
         do {
             try store.update(message)
+            syncConversationMeta()
         } catch {
             errorMessage = "Could not save this turn: \(error.localizedDescription)"
         }
+    }
+
+    private func resetComposer() {
+        draft = ""
+        pendingPhoto = nil
+    }
+
+    private func syncConversationMeta() {
+        conversations = store.summaries()
+        currentConversationID = store.currentID
+        conversationTitle = store.currentTitle
     }
 }

@@ -2,6 +2,44 @@
 
 Append-only. Newest first. Supersede; do not rewrite history.
 
+## 2026-10-12 — Composer NSTextView must not clobber dictation
+
+**Choice:** While the composer is first responder, SwiftUI must not assign `textView.string` or the selection unless the binding changed independently of the view (send / New). Never do either while `hasMarkedText()`. The scroll view refuses first responder; the `NSTextView` is the input client. Hide the placeholder overlay when focused.
+
+**Why:** Keyboard Dictation inserts via marked text. `updateNSView` was resetting the string from a still-empty binding on every caret/selection tick, so the dictation UI appeared and the caret blinked but no words stayed.
+
+## 2026-10-12 — Mic falls back to Mac Keyboard Dictation
+
+**Choice:** `SFSpeechRecognizer` with `requiresOnDeviceRecognition` is only used when a locale reports an on-device pack. Error 102 (`kLSRErrorDomain` “Failed to access assets”) is not shown; the mic then invokes AppKit `startDictation:` into the composer. That is the same Keyboard → Dictation the learner already enabled. Audio still does not go to a third-party API. We do not set `requiresOnDeviceRecognition = false` (Apple’s speech servers).
+
+**Why:** Keyboard → Dictation downloads system dictation assets. The Speech framework’s on-device pack is a different catalog; a sandboxed app often cannot load it even when Dictation works. The 102 error was that mismatch. System dictation types into the focused NSTextView, which is the part-or-whole-of-a-message behavior we want.
+
+## 2026-10-12 — Don’t trust `supportsOnDeviceRecognition` on Mac
+
+**Choice:** Do not refuse to start dictation because `SFSpeechRecognizer.supportsOnDeviceRecognition` is false. Resolve English/Japanese against `supportedLocales()` (prefer `en-GB`, then any `en_*` the Mac has). Still set `requiresOnDeviceRecognition` on the request so audio never goes to a server. Only surface “not installed” if the recognition task itself fails (e.g. assistant error 1101).
+
+**Why:** Keyboard → Dictation being on does not make that flag true. It is locale-specific and often stays false on macOS even when on-device works. We were also asking for `en-GB` while Dictation’s “English” is commonly US English — a different pack.
+
+## 2026-10-12 — English dictation is British (`en-GB`)
+
+**Choice:** English speech locale is `en-GB`, not `en-US`. Japanese stays `ja-JP`. OCR is unchanged (`en-US` is still Vision’s English hint).
+
+**Why:** The learner asked for British English. Apple’s Speech pack is regional; US English produces US spellings.
+
+## 2026-10-12 — On-device Speech dictation, not an audio API
+
+**Choice:** Apple Speech (`SFSpeechRecognizer` + `AVAudioEngine`) with `requiresOnDeviceRecognition = true`. Native and target locales (defaults: English `en-US`, Japanese `ja-JP`). No transcription HTTP API, no Whisper cloud, no bundled whisper.cpp model. If on-device recognition isn’t available, fail and point at System Settings → Keyboard → Dictation — never fall back to Apple’s servers.
+
+**UX:** Mic in the composer inserts at the caret or replaces a selection, so dictation can be part of a message or the whole thing. EN/JA (native/target) segmented control next to the mic. **New with dictation** starts a blank thread already listening.
+
+**Why:** Same on-device posture as Vision OCR. Audio stays on the Mac. System speech packs already cover the first language pair. whisper.cpp is the later fallback only if Apple’s pack is thin, same shape as Vision-then-multimodal.
+
+## 2026-10-12 — Multiple conversations; New, not Clear
+
+**Choice:** Each chat is its own `StoredConversation`. **New** starts a fresh thread and keeps the old one. The title under Jozu is a menu of past threads. Leaving an unused empty thread deletes it. Clear is gone. Lessons stay global; they are not wiped with a thread.
+
+**Why:** The learner wanted another conversation, not a delete. One thread was a slice-2 constraint (2026-10-04), not the product.
+
 ## 2026-10-05 — Lessons replace memory crumbs
 
 **Choice:** The saved unit is a **lesson**: one usable distinction (one word-sense, one grammar use, or one nuance/contrast). Not a `{kind, target, note}` crumb. Remember distills a bounded stretch of chat into a structured guide. If several candidates are in that stretch, list them and the learner picks. Search the library. Chat | Lessons are full screens, not sheets. Settings may stay a sheet.
