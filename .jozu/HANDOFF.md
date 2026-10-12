@@ -14,7 +14,7 @@ S8 first slice is on `main`. Chat | Lessons are full screens. Remember distills 
 
 Discuss + merge (S8b) is not in this slice.
 
-Pull this branch, ⌘R, add a key, Review a lesson: three distinct questions, guide after the third, interval from the weakest answer.
+Pull this branch, ⌘R (ad-hoc Sign to Run Locally), add a key, Review a lesson: three distinct questions, guide after the third, interval from the weakest answer.
 
 This Linux agent cannot compile or launch the app.
 

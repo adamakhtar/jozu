@@ -2,6 +2,12 @@
 
 Append-only. Newest first. Supersede; do not rewrite history.
 
+## 2026-10-12 — Ad-hoc Sign to Run Locally
+
+**Choice:** Target signing is `CODE_SIGN_IDENTITY = "-"` / `CODE_SIGN_STYLE = Manual`, plus `CODE_SIGN_ALLOW_ENTITLEMENTS_MODIFICATION = YES`. No development team in the project.
+
+**Why:** Automatic signing with no team falls back to ad-hoc, then Debug packaging injects `get-task-allow` into `Jozu.entitlements` and Xcode aborts (“modified during the build”). Local ⌘R is unsigned on purpose (same reason as the data-protection keychain). A team identity later can replace this.
+
 ## 2026-10-12 — Review is a 3-probe production kit
 
 **Choice:** Opening a lesson review, the app picks 3 distinct patterns from kind + `focus` / contrasts / pitfalls. One LLM call writes all three questions. The learner sees them one at a time. Each answer is graded separately (LLM-as-judge, paraphrases allowed). The guide stays hidden until the last probe of that lesson. `nextReviewAt` uses the **worst** grade in the kit (miss < partial < pass < easy). Skip leaves the lesson due. Retry after miss/partial is allowed on earlier probes, not after the guide is shown.
