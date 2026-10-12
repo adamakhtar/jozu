@@ -130,7 +130,8 @@ struct ChatView: View {
                 JozuComposerField(
                     text: $session.draft,
                     placeholder: composerPlaceholder,
-                    selectedUTF16Range: $selectedUTF16Range
+                    selectedUTF16Range: $selectedUTF16Range,
+                    isFocused: composerFocused
                 )
                 .focused($composerFocused)
 

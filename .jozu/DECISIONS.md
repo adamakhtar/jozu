@@ -2,6 +2,12 @@
 
 Append-only. Newest first. Supersede; do not rewrite history.
 
+## 2026-10-12 — Composer NSTextView must not clobber dictation
+
+**Choice:** While the composer is first responder, SwiftUI must not assign `textView.string` or the selection unless the binding changed independently of the view (send / New). Never do either while `hasMarkedText()`. The scroll view refuses first responder; the `NSTextView` is the input client. Hide the placeholder overlay when focused.
+
+**Why:** Keyboard Dictation inserts via marked text. `updateNSView` was resetting the string from a still-empty binding on every caret/selection tick, so the dictation UI appeared and the caret blinked but no words stayed.
+
 ## 2026-10-12 — Mic falls back to Mac Keyboard Dictation
 
 **Choice:** `SFSpeechRecognizer` with `requiresOnDeviceRecognition` is only used when a locale reports an on-device pack. Error 102 (`kLSRErrorDomain` “Failed to access assets”) is not shown; the mic then invokes AppKit `startDictation:` into the composer. That is the same Keyboard → Dictation the learner already enabled. Audio still does not go to a third-party API. We do not set `requiresOnDeviceRecognition = false` (Apple’s speech servers).
