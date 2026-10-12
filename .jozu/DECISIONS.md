@@ -2,6 +2,20 @@
 
 Append-only. Newest first. Supersede; do not rewrite history.
 
+## 2026-10-12 — On-device Speech dictation, not an audio API
+
+**Choice:** Apple Speech (`SFSpeechRecognizer` + `AVAudioEngine`) with `requiresOnDeviceRecognition = true`. Native and target locales (defaults: English `en-US`, Japanese `ja-JP`). No transcription HTTP API, no Whisper cloud, no bundled whisper.cpp model. If on-device recognition isn’t available, fail and point at System Settings → Keyboard → Dictation — never fall back to Apple’s servers.
+
+**UX:** Mic in the composer inserts at the caret or replaces a selection, so dictation can be part of a message or the whole thing. EN/JA (native/target) segmented control next to the mic. **New with dictation** starts a blank thread already listening.
+
+**Why:** Same on-device posture as Vision OCR. Audio stays on the Mac. System speech packs already cover the first language pair. whisper.cpp is the later fallback only if Apple’s pack is thin, same shape as Vision-then-multimodal.
+
+## 2026-10-12 — Multiple conversations; New, not Clear
+
+**Choice:** Each chat is its own `StoredConversation`. **New** starts a fresh thread and keeps the old one. The title under Jozu is a menu of past threads. Leaving an unused empty thread deletes it. Clear is gone. Lessons stay global; they are not wiped with a thread.
+
+**Why:** The learner wanted another conversation, not a delete. One thread was a slice-2 constraint (2026-10-04), not the product.
+
 ## 2026-10-05 — Lessons replace memory crumbs
 
 **Choice:** The saved unit is a **lesson**: one usable distinction (one word-sense, one grammar use, or one nuance/contrast). Not a `{kind, target, note}` crumb. Remember distills a bounded stretch of chat into a structured guide. If several candidates are in that stretch, list them and the learner picks. Search the library. Chat | Lessons are full screens, not sheets. Settings may stay a sheet.

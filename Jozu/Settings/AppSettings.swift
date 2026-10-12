@@ -42,6 +42,10 @@ final class AppSettings {
         didSet { KeychainStore.set(Key.apiKey, apiKey) }
     }
 
+    var dictationLanguage: DictationLanguage {
+        didSet { defaults.set(dictationLanguage.rawValue, forKey: Key.dictationLanguage) }
+    }
+
     var hasAPIKey: Bool {
         !apiKey.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
     }
@@ -59,6 +63,7 @@ final class AppSettings {
         static let model = "settings.model"
         static let apiBaseURL = "settings.apiBaseURL"
         static let apiKey = "apiKey"
+        static let dictationLanguage = "settings.dictationLanguage"
     }
 
     init(
@@ -68,6 +73,7 @@ final class AppSettings {
         model: String,
         apiBaseURL: String,
         apiKey: String,
+        dictationLanguage: DictationLanguage = .native,
         defaults: UserDefaults = .standard
     ) {
         self.nativeLanguage = nativeLanguage
@@ -76,6 +82,7 @@ final class AppSettings {
         self.model = model
         self.apiBaseURL = apiBaseURL
         self.apiKey = apiKey
+        self.dictationLanguage = dictationLanguage
         self.defaults = defaults
     }
 
@@ -87,6 +94,7 @@ final class AppSettings {
             model: defaults.string(forKey: Key.model) ?? "gpt-4o-mini",
             apiBaseURL: defaults.string(forKey: Key.apiBaseURL) ?? "https://api.openai.com/v1",
             apiKey: KeychainStore.get(Key.apiKey) ?? "",
+            dictationLanguage: DictationLanguage(rawValue: defaults.string(forKey: Key.dictationLanguage) ?? "") ?? .native,
             defaults: defaults
         )
     }

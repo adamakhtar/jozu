@@ -4,6 +4,7 @@ Ordered. Only the top item is “now” unless a conversation explicitly pulls s
 
 ## Now
 
+- [ ] **Threads + dictation verify** — New keeps the old thread; title menu switches; on-device EN/JA mic (part of a message and New with dictation).
 - [ ] **S8 verify** — Key in Settings, Remember a stretch, picker if needed, lesson appears, search, Review (guide hidden until grade).
 
 ## Up next
@@ -11,6 +12,8 @@ Ordered. Only the top item is “now” unless a conversation explicitly pulls s
 - [x] **S0 verify** — Mac window runs; composer ink fixed.
 - [x] **S1 live tutor** — Streamed replies; tighter prompt. Live key still optional.
 - [x] **S2 persist chats** — SwiftData, one thread, Clear.
+- [x] **Multiple conversations** — New keeps the old thread; title menu switches. Clear removed.
+- [x] **Speech in** — On-device Apple Speech, EN/JA, composer mic + New with dictation.
 - [x] **S3 photo + OCR** — Attach / drop / paste → Vision → editable text in the turn. Image stays on-device.
 - [x] **S4 remember** — Remember button + “remember this”. Word / sentence / grammar.
 - [x] **S5 review list** — Memories sheet. Due first. No grade session yet.
@@ -25,7 +28,8 @@ Ordered. Only the top item is “now” unless a conversation explicitly pulls s
 - [ ] Parent `Word` / topic with many sense-lessons
 - [ ] iPhone target on the same sources
 - [ ] iCloud / sync (only after local-first feels good)
-- [ ] Speech in / out
+- [ ] Speech out (TTS)
+- [ ] whisper.cpp fallback if on-device Apple Speech is thin for a script
 - [ ] Multiple courses / languages at once
 - [ ] Extract `JozuCore` Swift package so Linux can test domain logic
 

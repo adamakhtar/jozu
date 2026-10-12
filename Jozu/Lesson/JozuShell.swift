@@ -5,6 +5,7 @@ struct JozuShell: View {
     @Environment(AppSettings.self) private var settings
     @Environment(\.modelContext) private var modelContext
     @State private var session: ChatSession?
+    @State private var dictation = DictationController()
     @State private var pane: Pane = .chat
     @State private var showingSettings = false
     @State private var selectedLessonID: UUID?
@@ -23,7 +24,7 @@ struct JozuShell: View {
             if let session {
                 switch pane {
                 case .chat:
-                    ChatView(session: session)
+                    ChatView(session: session, dictation: dictation)
                 case .lessons:
                     LessonLibraryView(session: session, selectedLessonID: $selectedLessonID)
                 }
@@ -48,6 +49,11 @@ struct JozuShell: View {
                 selectedLessonID = id
                 pane = .lessons
                 session?.openedLessonID = nil
+            }
+        }
+        .onChange(of: pane) {
+            if pane != .chat {
+                dictation.stop()
             }
         }
         .sheet(isPresented: $showingSettings) {
@@ -92,9 +98,7 @@ struct JozuShell: View {
                 Text("Jozu")
                     .font(.system(size: 22, weight: .semibold, design: .serif))
                     .foregroundStyle(JozuTheme.ink)
-                Text("\(settings.targetLanguage) companion")
-                    .font(.system(size: 12))
-                    .foregroundStyle(JozuTheme.muted)
+                conversationMenu
             }
 
             Picker("Pane", selection: $pane) {
@@ -116,12 +120,19 @@ struct JozuShell: View {
                 .frame(maxWidth: 260)
                 .help("Language the tutor replies in")
 
-                Button("Clear") {
-                    session?.clear()
+                Menu {
+                    Button("New conversation") {
+                        startNew(dictate: false)
+                    }
+                    Button("New with dictation") {
+                        startNew(dictate: true)
+                    }
+                } label: {
+                    Text("New")
                 }
-                .buttonStyle(.borderless)
-                .disabled(session?.messages.isEmpty ?? true || session?.isSending == true)
-                .help("Delete this thread from this Mac")
+                .menuStyle(.borderlessButton)
+                .disabled(session?.isSending == true)
+                .help("Start a new conversation. The current one stays on this Mac.")
             }
 
             Button {
@@ -134,6 +145,52 @@ struct JozuShell: View {
         }
         .padding(.horizontal, 20)
         .padding(.vertical, 14)
+    }
+
+    @ViewBuilder
+    private var conversationMenu: some View {
+        Menu {
+            Button("New conversation") {
+                startNew(dictate: false)
+            }
+            Button("New with dictation") {
+                startNew(dictate: true)
+            }
+            if let session, !session.conversations.isEmpty {
+                Divider()
+                ForEach(session.conversations) { item in
+                    Button {
+                        dictation.stop()
+                        session.openConversation(item.id)
+                        pane = .chat
+                    } label: {
+                        if item.id == session.currentConversationID {
+                            Label(item.title, systemImage: "checkmark")
+                        } else {
+                            Text(item.title)
+                        }
+                    }
+                }
+            }
+        } label: {
+            HStack(spacing: 4) {
+                Text(session?.conversationTitle ?? "New conversation")
+                    .lineLimit(1)
+                Image(systemName: "chevron.down")
+                    .font(.system(size: 9, weight: .semibold))
+            }
+            .font(.system(size: 12))
+            .foregroundStyle(JozuTheme.muted)
+        }
+        .menuStyle(.borderlessButton)
+        .help("Past conversations on this Mac")
+        .frame(maxWidth: 280, alignment: .leading)
+    }
+
+    private func startNew(dictate: Bool) {
+        dictation.stop()
+        pane = .chat
+        session?.startNewConversation(beginDictation: dictate)
     }
 }
 

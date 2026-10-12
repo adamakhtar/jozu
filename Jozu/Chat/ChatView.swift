@@ -1,3 +1,4 @@
+import Foundation
 import SwiftData
 import SwiftUI
 import UniformTypeIdentifiers
@@ -10,8 +11,11 @@ import UIKit
 
 struct ChatView: View {
     @Bindable var session: ChatSession
+    @Bindable var dictation: DictationController
     @Environment(AppSettings.self) private var settings
     @State private var importingPhoto = false
+    @State private var selectedUTF16Range = NSRange(location: 0, length: 0)
+    @State private var insertion: DictationInsertion?
     @FocusState private var composerFocused: Bool
 
     var body: some View {
@@ -21,7 +25,18 @@ struct ChatView: View {
             composer
         }
         .background(JozuTheme.paper)
-        .onAppear { composerFocused = true }
+        .onAppear {
+            composerFocused = true
+            consumeBeginDictationIfNeeded()
+        }
+        .onChange(of: session.beginDictation) {
+            consumeBeginDictationIfNeeded()
+        }
+        .onChange(of: settings.dictationLanguage) {
+            if dictation.isListening {
+                Task { await startDictation() }
+            }
+        }
         .fileImporter(
             isPresented: $importingPhoto,
             allowedContentTypes: [.image],
@@ -86,16 +101,22 @@ struct ChatView: View {
             Text("Ask about a word, a pattern, or a photo of text.")
                 .font(.system(size: 16, design: .serif))
                 .foregroundStyle(JozuTheme.ink)
-            Text("Remember a turn to save a lesson. Open Lessons to search and review.")
+            Text("Type, or dictate in \(settings.nativeLanguage) or \(settings.targetLanguage). Audio stays on this Mac.")
                 .font(.system(size: 13))
                 .foregroundStyle(JozuTheme.muted)
+            Button(dictation.isListening ? "Listening…" : "Dictate a message") {
+                Task { await toggleDictation() }
+            }
+            .buttonStyle(.borderless)
+            .foregroundStyle(JozuTheme.vermillion)
+            .disabled(session.isSending)
         }
         .frame(maxWidth: .infinity, alignment: .leading)
     }
 
     private var composer: some View {
         VStack(alignment: .leading, spacing: 8) {
-            if let error = session.errorMessage, session.needsSettings == false {
+            if let error = composerError {
                 Text(error)
                     .font(.system(size: 12))
                     .foregroundStyle(JozuTheme.vermillion)
@@ -108,11 +129,28 @@ struct ChatView: View {
             HStack(alignment: .bottom, spacing: 10) {
                 JozuComposerField(
                     text: $session.draft,
-                    placeholder: session.pendingPhoto == nil
-                        ? "Ask about \(settings.targetLanguage)…"
-                        : "Ask about the photo, or send as-is…"
+                    placeholder: composerPlaceholder,
+                    selectedUTF16Range: $selectedUTF16Range
                 )
                 .focused($composerFocused)
+
+                Picker("Dictate in", selection: dictationLanguageBinding) {
+                    Text(localeShort(settings.nativeLanguage)).tag(DictationLanguage.native)
+                    Text(localeShort(settings.targetLanguage)).tag(DictationLanguage.target)
+                }
+                .pickerStyle(.segmented)
+                .frame(width: 92)
+                .help("Language to transcribe. On this Mac, not a server.")
+
+                Button {
+                    Task { await toggleDictation() }
+                } label: {
+                    Image(systemName: dictation.isListening ? "mic.fill" : "mic")
+                        .foregroundStyle(dictation.isListening ? JozuTheme.vermillion : JozuTheme.ink)
+                }
+                .buttonStyle(.borderless)
+                .help(dictation.isListening ? "Stop dictation" : "Dictate into this message")
+                .disabled(session.isSending)
 
                 Button {
                     importingPhoto = true
@@ -124,6 +162,8 @@ struct ChatView: View {
                 .disabled(session.isSending)
 
                 Button {
+                    dictation.stop()
+                    insertion = nil
                     Task { await session.send() }
                 } label: {
                     Text("Send")
@@ -190,10 +230,93 @@ struct ChatView: View {
     }
 
     private var footerHint: String {
+        if dictation.isListening {
+            return "Listening in \(dictationLanguageName). Click the mic to stop. Audio stays on this Mac."
+        }
         if settings.hasAPIKey {
-            return "Return for a new line, ⌘↩ to send. Remember a turn to save a lesson."
+            return "Return for a new line, ⌘↩ to send. Mic dictates on this Mac."
         }
         return "Add an API key in Settings to chat, save lessons, and review."
+    }
+
+    private var composerPlaceholder: String {
+        if dictation.isListening {
+            return "Listening…"
+        }
+        if session.pendingPhoto == nil {
+            return "Ask about \(settings.targetLanguage)…"
+        }
+        return "Ask about the photo, or send as-is…"
+    }
+
+    private var composerError: String? {
+        if let error = dictation.errorMessage { return error }
+        if session.needsSettings { return nil }
+        return session.errorMessage
+    }
+
+    private var dictationLanguageName: String {
+        settings.dictationLanguage == .native ? settings.nativeLanguage : settings.targetLanguage
+    }
+
+    private var dictationLanguageBinding: Binding<DictationLanguage> {
+        Binding(
+            get: { settings.dictationLanguage },
+            set: { settings.dictationLanguage = $0 }
+        )
+    }
+
+    private func consumeBeginDictationIfNeeded() {
+        guard session.beginDictation else { return }
+        session.beginDictation = false
+        Task { await startDictation() }
+    }
+
+    private func toggleDictation() async {
+        if dictation.isListening {
+            dictation.stop()
+            insertion = nil
+            return
+        }
+        await startDictation()
+    }
+
+    private func startDictation() async {
+        let locale = dictationLocale()
+        insertion = DictationInsertion.capturing(
+            text: session.draft,
+            utf16Range: selectedUTF16Range,
+            insertsSpace: DictationInsertion.usesSpace(locale: locale)
+        )
+        composerFocused = true
+        await dictation.start(locale: locale) { spoken, isFinal in
+            applyTranscript(spoken, isFinal: isFinal)
+        }
+        if !dictation.isListening {
+            insertion = nil
+        }
+    }
+
+    private func applyTranscript(_ spoken: String, isFinal: Bool) {
+        guard var insertion else { return }
+        session.draft = insertion.compose(spoken)
+        selectedUTF16Range = NSRange(location: insertion.caretUTF16(after: spoken), length: 0)
+        if isFinal {
+            insertion = insertion.committed(spoken)
+            self.insertion = insertion
+        }
+    }
+
+    private func dictationLocale() -> Locale {
+        let name = dictationLanguageName
+        let code = VisionLanguage.codes(for: name).first ?? "en-US"
+        return Locale(identifier: code)
+    }
+
+    private func localeShort(_ name: String) -> String {
+        let code = VisionLanguage.codes(for: name).first ?? name
+        let language = code.split(separator: "-").first.map(String.init) ?? code
+        return language.uppercased()
     }
 
     private var pendingOCRBinding: Binding<String> {

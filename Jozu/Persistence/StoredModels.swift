@@ -3,12 +3,14 @@ import SwiftData
 
 @Model
 final class StoredConversation {
+    var id: UUID = UUID()
     var createdAt: Date
     var updatedAt: Date
     @Relationship(deleteRule: .cascade, inverse: \StoredMessage.conversation)
     var messages: [StoredMessage] = []
 
-    init(createdAt: Date = .now, updatedAt: Date = .now) {
+    init(id: UUID = UUID(), createdAt: Date = .now, updatedAt: Date = .now) {
+        self.id = id
         self.createdAt = createdAt
         self.updatedAt = updatedAt
         self.messages = []

@@ -1,3 +1,4 @@
+import Foundation
 import SwiftUI
 
 #if os(macOS)
@@ -25,6 +26,7 @@ struct JozuComposerField: View {
     var isEditable: Bool = true
     var minHeight: CGFloat = 80
     var maxHeight: CGFloat = 176
+    var selectedUTF16Range: Binding<NSRange>? = nil
 
     var body: some View {
         ZStack(alignment: .topLeading) {
@@ -61,7 +63,11 @@ struct JozuComposerField: View {
     @ViewBuilder
     private var editor: some View {
         #if os(macOS)
-        MacComposerTextView(text: $text, isEditable: isEditable)
+        MacComposerTextView(
+            text: $text,
+            isEditable: isEditable,
+            selectedUTF16Range: selectedUTF16Range
+        )
         #else
         TextEditor(text: $text)
             .font(.system(size: JozuComposerMetrics.fontSize))
@@ -76,9 +82,10 @@ struct JozuComposerField: View {
 private struct MacComposerTextView: NSViewRepresentable {
     @Binding var text: String
     var isEditable: Bool
+    var selectedUTF16Range: Binding<NSRange>?
 
     func makeCoordinator() -> Coordinator {
-        Coordinator(text: $text)
+        Coordinator(text: $text, selectedUTF16Range: selectedUTF16Range)
     }
 
     func makeNSView(context: Context) -> NSScrollView {
@@ -125,9 +132,15 @@ private struct MacComposerTextView: NSViewRepresentable {
 
     func updateNSView(_ scroll: NSScrollView, context: Context) {
         context.coordinator.text = $text
+        context.coordinator.selectedUTF16Range = selectedUTF16Range
         guard let textView = scroll.documentView as? NSTextView else { return }
         if textView.string != text {
             textView.string = text
+            if let range = selectedUTF16Range?.wrappedValue,
+               range.location != NSNotFound,
+               NSMaxRange(range) <= (text as NSString).length {
+                textView.setSelectedRange(range)
+            }
         }
         textView.isEditable = isEditable
         textView.font = NSFont.systemFont(ofSize: JozuComposerMetrics.fontSize)
@@ -140,14 +153,21 @@ private struct MacComposerTextView: NSViewRepresentable {
 
     final class Coordinator: NSObject, NSTextViewDelegate {
         var text: Binding<String>
+        var selectedUTF16Range: Binding<NSRange>?
 
-        init(text: Binding<String>) {
+        init(text: Binding<String>, selectedUTF16Range: Binding<NSRange>?) {
             self.text = text
+            self.selectedUTF16Range = selectedUTF16Range
         }
 
         func textDidChange(_ notification: Notification) {
             guard let textView = notification.object as? NSTextView else { return }
             text.wrappedValue = textView.string
+        }
+
+        func textViewDidChangeSelection(_ notification: Notification) {
+            guard let textView = notification.object as? NSTextView else { return }
+            selectedUTF16Range?.wrappedValue = textView.selectedRange()
         }
     }
 }
