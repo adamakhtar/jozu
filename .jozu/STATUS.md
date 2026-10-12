@@ -1,6 +1,6 @@
 # Status
 
-Last updated: 2026-10-05 (S8 Lessons first slice)
+Last updated: 2026-10-12 (TTS research in `.jozu/TTS.md`; S8 still unverified on a Mac)
 
 ## What exists
 
@@ -19,6 +19,7 @@ Last updated: 2026-10-05 (S8 Lessons first slice)
 - Screen / other-app peek
 - Multiple inbox threads
 - Stub tutor
+- Speech in / out (research only: `.jozu/TTS.md`)
 - iPhone target
 
 ## Environment constraint
