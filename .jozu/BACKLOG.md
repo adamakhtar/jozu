@@ -25,7 +25,7 @@ Ordered. Only the top item is “now” unless a conversation explicitly pulls s
 - [ ] Parent `Word` / topic with many sense-lessons
 - [ ] iPhone target on the same sources
 - [ ] iCloud / sync (only after local-first feels good)
-- [ ] Speech in / out
+- [ ] Speech in / out — research in `.jozu/TTS.md`; default would be on-device `AVSpeechSynthesizer`. Not started.
 - [ ] Multiple courses / languages at once
 - [ ] Extract `JozuCore` Swift package so Linux can test domain logic
 

@@ -12,6 +12,7 @@ Questions that are open. Defaults in `STATUS.md` are in force until answered.
 6. **Peek UX** — Menu “use frontmost app”, always-on allowlist, or per-turn grant?
 7. **Data** — Local-only forever, or iCloud later?
 8. **Name / tone** — Jozu (上手) from the repo. Keep?
+9. **Speech-out** — Read tutor replies aloud? Local Apple voices vs cloud (OpenAI mini-tts / ElevenLabs / Gemini)? Auto-speak vs tap? Japanese-only vs mixed reply? See `.jozu/TTS.md`. No default locked.
 
 ## Technical (not blocking S0)
 
