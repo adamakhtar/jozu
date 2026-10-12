@@ -107,6 +107,7 @@ struct LessonLibraryView: View {
         .tag(lesson.id as UUID?)
         .padding(.vertical, 4)
         .contextMenu {
+            Button("Discuss") { session.startDiscuss(lesson.id) }
             Button("Review") { startReview(itemID: lesson.id) }
             Button("Delete", role: .destructive) {
                 session.deleteLesson(lesson.id)
@@ -122,11 +123,12 @@ struct LessonLibraryView: View {
                 session.refreshLessons()
             }
         } else if let id = selectedLessonID, let lesson = session.lessons.first(where: { $0.id == id }) {
-            LessonDetailView(lesson: lesson) {
-                startReview(itemID: lesson.id)
-            } onDelete: {
-                session.deleteLesson(lesson.id)
-            }
+            LessonDetailView(
+                lesson: lesson,
+                onReview: { startReview(itemID: lesson.id) },
+                onDiscuss: { session.startDiscuss(lesson.id) },
+                onDelete: { session.deleteLesson(lesson.id) }
+            )
         } else {
             Text("Select a lesson, or Remember one from chat.")
                 .font(.system(size: 15, design: .serif))
@@ -152,6 +154,7 @@ struct LessonLibraryView: View {
 struct LessonDetailView: View {
     let lesson: Lesson
     var onReview: () -> Void
+    var onDiscuss: () -> Void
     var onDelete: () -> Void
 
     var body: some View {
@@ -162,6 +165,8 @@ struct LessonDetailView: View {
                         .font(.system(size: 11, weight: .semibold))
                         .foregroundStyle(JozuTheme.vermillion)
                     Spacer()
+                    Button("Discuss") { onDiscuss() }
+                    .help("Ask follow-ups, then Update lesson")
                     Button("Review") { onReview() }
                     Button("Delete", role: .destructive) { onDelete() }
                         .buttonStyle(.borderless)

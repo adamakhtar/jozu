@@ -63,6 +63,26 @@ struct Lesson: Identifiable, Hashable, Sendable {
         parts += pitfalls
         return parts.joined(separator: " ").lowercased()
     }
+
+    var promptDump: String {
+        var lines = [
+            "kind: \(kind.rawValue)",
+            "title: \(title)",
+            "sense: \(sense)",
+            "focus: \(focus)",
+            "context: \(context)",
+        ]
+        for example in examples {
+            lines.append("example: \(example.sentence) // \(example.gloss)")
+        }
+        for contrast in contrasts {
+            lines.append("contrast: \(contrast.item) — \(contrast.difference)")
+        }
+        for pitfall in pitfalls {
+            lines.append("pitfall: \(pitfall)")
+        }
+        return lines.joined(separator: "\n")
+    }
 }
 
 struct LessonCandidate: Identifiable, Hashable, Sendable {
@@ -96,6 +116,21 @@ enum RememberIntent {
         if folded.contains("save this") { return true }
         if folded.contains("覚えて") { return true }
         if folded.contains("記憶して") { return true }
+        return false
+    }
+}
+
+enum MergeIntent {
+    static func matches(_ text: String) -> Bool {
+        let folded = text.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
+        if folded.hasPrefix("update lesson") { return true }
+        if folded.hasPrefix("update the lesson") { return true }
+        if folded.contains("update this lesson") { return true }
+        if folded.contains("update the lesson") { return true }
+        if folded.contains("merge this") { return true }
+        if folded.contains("merge into the lesson") { return true }
+        if folded.contains("save this update") { return true }
+        if folded.contains("更新して") { return true }
         return false
     }
 }

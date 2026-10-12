@@ -50,6 +50,12 @@ struct JozuShell: View {
                 session?.openedLessonID = nil
             }
         }
+        .onChange(of: session?.requestChatPane) {
+            if session?.requestChatPane == true {
+                pane = .chat
+                session?.requestChatPane = false
+            }
+        }
         .sheet(isPresented: $showingSettings) {
             SettingsView()
                 .environment(settings)
@@ -120,8 +126,10 @@ struct JozuShell: View {
                     session?.clear()
                 }
                 .buttonStyle(.borderless)
-                .disabled(session?.messages.isEmpty ?? true || session?.isSending == true)
-                .help("Delete this thread from this Mac")
+                .disabled(!(session?.canClear ?? false))
+                .help(session?.discussingLessonID == nil
+                      ? "Delete this thread from this Mac"
+                      : "Delete this discussion, not the lesson")
             }
 
             Button {

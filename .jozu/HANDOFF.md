@@ -3,24 +3,23 @@
 Read this first in a new conversation. Then `STATUS.md`.
 
 Updated: 2026-10-05
-Branch: `cursor/s8-lessons-7cbf`
-Slice: 8 — Lessons (first slice)
+Branch: `cursor/s8b-discuss-merge-81b3`
+Slice: 8b — Discuss + merge
 
 ## Now
 
-S8 first slice is on this branch. Chat | Lessons are full screens. Remember distills a stretch of chat into a structured lesson (word sense / grammar / nuance). Several candidates → picker. Search the library. Review probes that sense + struggle; the guide is hidden until after the grade. No API key / 401 blocks LLM and points at Settings. No stub tutor.
+S8b is on this branch, stacked on S8 (`cursor/s8-lessons-7cbf` / PR #4).
 
-Discuss + merge (S8b) is not in this slice.
+Discuss is a lesson-scoped thread (not the inbox). Follow-ups land in Chat with the current guide in context. **Update lesson** rewrites that guide from the talk. Schedule (`nextReviewAt`, interval) is unchanged. No inline edit.
 
-Pull `cursor/s8-lessons-7cbf`, ⌘R, add a key, ask about a word, Remember, confirm the lesson, Review.
+Pull this branch, ⌘R, add a key. Open a lesson → Discuss → ask a follow-up → Update lesson. You should land on the revised guide. Done returns to the inbox; the discussion stays on the lesson.
 
 This Linux agent cannot compile or launch the app.
 
 ## Next (do in this order)
 
-1. Confirm S8 on a Mac.
-2. S8b — Discuss this lesson + merge update.
-3. S7 Mac-only scoped peek.
+1. Confirm S8 + S8b on a Mac.
+2. S7 Mac-only scoped peek.
 
 ## Do not
 
@@ -33,6 +32,7 @@ This Linux agent cannot compile or launch the app.
 - Inline-edit lesson body in v1.
 - Distill the entire mixed inbox into one lesson; picker if several topics.
 - Send the photo bytes to the model unless a later decision says multimodal is needed.
+- Merge discuss turns into the inbox thread.
 
 ## Blocked on the user
 

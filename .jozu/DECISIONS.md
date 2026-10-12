@@ -2,6 +2,14 @@
 
 Append-only. Newest first. Supersede; do not rewrite history.
 
+## 2026-10-05 — Discuss is lesson-scoped; merge rewrites the guide
+
+**Choice:** Discuss is not the inbox. Transcript lives on `StoredLesson` (`discussJSON`). Chat chrome shows a banner (title + sense). Done returns to the inbox; Clear in that mode wipes the discussion only.
+
+**Merge:** Explicit **Update lesson** (or “update the lesson” / “merge this” / 更新して). LLM returns the full revised guide JSON. Same lesson id. `createdAt`, `nextReviewAt`, and interval stay. `updatedAt` bumps. No inline field editing.
+
+**Why:** Follow-ups are the product. Mixing them into the inbox would pollute Remember. A form editor would fight the model. Review schedule is a drip, not a save.
+
 ## 2026-10-05 — Lessons replace memory crumbs
 
 **Choice:** The saved unit is a **lesson**: one usable distinction (one word-sense, one grammar use, or one nuance/contrast). Not a `{kind, target, note}` crumb. Remember distills a bounded stretch of chat into a structured guide. If several candidates are in that stretch, list them and the learner picks. Search the library. Chat | Lessons are full screens, not sheets. Settings may stay a sheet.

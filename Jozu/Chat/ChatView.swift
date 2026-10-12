@@ -47,25 +47,27 @@ struct ChatView: View {
         ScrollViewReader { proxy in
             ScrollView {
                 LazyVStack(alignment: .leading, spacing: 14) {
-                    if session.messages.isEmpty {
-                        emptyState
-                            .padding(.top, 48)
+                    if let lesson = session.discussingLesson {
+                        discussBanner(lesson)
                     }
 
-                    if let notice = session.notice {
+                    if session.displayedMessages.isEmpty {
+                        emptyState
+                            .padding(.top, session.discussingLesson == nil ? 48 : 8)
+                    }
+
+                    if let notice = session.notice, session.discussingLessonID == nil {
                         Text(notice)
                             .font(.system(size: 12))
                             .foregroundStyle(JozuTheme.vermillion)
                     }
 
-                    ForEach(session.messages) { message in
+                    ForEach(session.displayedMessages) { message in
                         MessageBubble(
                             message: message,
                             isRemembering: session.rememberingID == message.id,
                             isSaved: session.isSaved(messageID: message.id),
-                            onRemember: {
-                                Task { await session.remember(from: message) }
-                            }
+                            onRemember: rememberAction(for: message)
                         )
                         .id(message.id)
                     }
@@ -73,7 +75,7 @@ struct ChatView: View {
                 .padding(20)
             }
             .onChange(of: session.scrollAnchor) {
-                guard let anchor = session.messages.last?.id else { return }
+                guard let anchor = session.displayedMessages.last?.id else { return }
                 withAnimation(.easeOut(duration: 0.15)) {
                     proxy.scrollTo(anchor, anchor: .bottom)
                 }
@@ -83,14 +85,71 @@ struct ChatView: View {
 
     private var emptyState: some View {
         VStack(alignment: .leading, spacing: 10) {
-            Text("Ask about a word, a pattern, or a photo of text.")
-                .font(.system(size: 16, design: .serif))
-                .foregroundStyle(JozuTheme.ink)
-            Text("Remember a turn to save a lesson. Open Lessons to search and review.")
-                .font(.system(size: 13))
-                .foregroundStyle(JozuTheme.muted)
+            if session.discussingLesson != nil {
+                Text("Ask a follow-up about this lesson.")
+                    .font(.system(size: 16, design: .serif))
+                    .foregroundStyle(JozuTheme.ink)
+                Text("When the guide should change, Update lesson. Done returns to the inbox.")
+                    .font(.system(size: 13))
+                    .foregroundStyle(JozuTheme.muted)
+            } else {
+                Text("Ask about a word, a pattern, or a photo of text.")
+                    .font(.system(size: 16, design: .serif))
+                    .foregroundStyle(JozuTheme.ink)
+                Text("Remember a turn to save a lesson. Open Lessons to search, discuss, and review.")
+                    .font(.system(size: 13))
+                    .foregroundStyle(JozuTheme.muted)
+            }
         }
         .frame(maxWidth: .infinity, alignment: .leading)
+    }
+
+    private func discussBanner(_ lesson: Lesson) -> some View {
+        VStack(alignment: .leading, spacing: 10) {
+            HStack(alignment: .firstTextBaseline) {
+                VStack(alignment: .leading, spacing: 2) {
+                    Text("Discussing")
+                        .font(.system(size: 11, weight: .semibold))
+                        .foregroundStyle(JozuTheme.vermillion)
+                    Text(lesson.title)
+                        .font(.system(size: 16, weight: .medium, design: .serif))
+                        .foregroundStyle(JozuTheme.ink)
+                    if !lesson.subtitle.isEmpty {
+                        Text(lesson.subtitle)
+                            .font(.system(size: 13))
+                            .foregroundStyle(JozuTheme.muted)
+                    }
+                }
+                Spacer()
+                Button("Update lesson") {
+                    Task { await session.mergeLesson() }
+                }
+                .disabled(!session.canMerge)
+                .help("Rewrite the guide from this discussion")
+                Button("Done") {
+                    session.exitDiscuss()
+                }
+                .buttonStyle(.borderless)
+                .disabled(session.isSending || session.isMerging)
+                .help("Return to the inbox. The discussion stays with the lesson.")
+            }
+            if session.isMerging {
+                HStack(spacing: 8) {
+                    ProgressView().controlSize(.small)
+                    Text("Updating the lesson…")
+                        .font(.system(size: 12))
+                        .foregroundStyle(JozuTheme.muted)
+                }
+            }
+        }
+        .padding(12)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(JozuTheme.card)
+        .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
+        .overlay(
+            RoundedRectangle(cornerRadius: 8, style: .continuous)
+                .stroke(JozuTheme.line, lineWidth: 1)
+        )
     }
 
     private var composer: some View {
@@ -109,7 +168,9 @@ struct ChatView: View {
                 JozuComposerField(
                     text: $session.draft,
                     placeholder: session.pendingPhoto == nil
-                        ? "Ask about \(settings.targetLanguage)…"
+                        ? (session.discussingLesson == nil
+                           ? "Ask about \(settings.targetLanguage)…"
+                           : "Ask a follow-up about this lesson…")
                         : "Ask about the photo, or send as-is…"
                 )
                 .focused($composerFocused)
@@ -121,7 +182,7 @@ struct ChatView: View {
                 }
                 .buttonStyle(.borderless)
                 .help("Attach a photo of text")
-                .disabled(session.isSending)
+                .disabled(session.isSending || session.isMerging)
 
                 Button {
                     Task { await session.send() }
@@ -130,7 +191,7 @@ struct ChatView: View {
                         .font(.system(size: 13, weight: .semibold))
                 }
                 .keyboardShortcut(.return, modifiers: .command)
-                .disabled(!session.canSend)
+                .disabled(!session.canSend || session.isMerging)
             }
 
             Text(footerHint)
@@ -190,10 +251,13 @@ struct ChatView: View {
     }
 
     private var footerHint: String {
-        if settings.hasAPIKey {
-            return "Return for a new line, ⌘↩ to send. Remember a turn to save a lesson."
+        if !settings.hasAPIKey {
+            return "Add an API key in Settings to chat, save lessons, and review."
         }
-        return "Add an API key in Settings to chat, save lessons, and review."
+        if session.discussingLesson != nil {
+            return "Return for a new line, ⌘↩ to send. Update lesson when the guide should change."
+        }
+        return "Return for a new line, ⌘↩ to send. Remember a turn to save a lesson."
     }
 
     private var pendingOCRBinding: Binding<String> {
@@ -205,6 +269,13 @@ struct ChatView: View {
                 session.pendingPhoto = photo
             }
         )
+    }
+
+    private func rememberAction(for message: Message) -> (() -> Void)? {
+        guard session.discussingLessonID == nil else { return nil }
+        return {
+            Task { await session.remember(from: message) }
+        }
     }
 
     private func importProviders(_ providers: [NSItemProvider]) -> Bool {

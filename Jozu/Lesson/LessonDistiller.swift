@@ -66,10 +66,62 @@ enum LessonDistiller {
             ],
             settings: request
         )
-        guard let lesson = parseLesson(raw, fallback: candidate) else {
+        guard let lesson = parseLesson(raw, existing: nil, fallback: candidate) else {
             throw ReviewError.unreadableLesson
         }
         return lesson
+    }
+
+    static func merge(
+        lesson: Lesson,
+        messages: [Message],
+        settings: LLMRequestSettings,
+        client: any LLMServicing
+    ) async throws -> Lesson {
+        var request = settings
+        request.systemOverride = """
+        Revise ONE existing lesson using the follow-up discussion.
+        Native language: \(settings.nativeLanguage).
+        They are studying \(settings.targetLanguage).
+
+        Keep this same sense/use unless the learner clearly corrected it.
+        Do not turn this into a different word-sense or a second lesson.
+        Preserve examples, contrasts, and pitfalls that the talk did not replace.
+        Add or rewrite only what this discussion earned.
+        Cover only this sense/use.
+
+        Reply with JSON only, no markdown — the full revised guide:
+        {"kind":"word"|"grammar"|"nuance","title":"...","sense":"...","focus":"...","context":"...","examples":[{"sentence":"...","gloss":"..."}],"contrasts":[{"item":"...","difference":"..."}],"pitfalls":["..."]}
+        title in \(settings.targetLanguage) when possible. sense, focus, gloss, difference in \(settings.nativeLanguage).
+        """
+
+        let fallback = LessonCandidate(
+            kind: lesson.kind,
+            title: lesson.title,
+            sense: lesson.sense,
+            focus: lesson.focus
+        )
+        let raw = try await client.complete(
+            messages: [
+                Message(
+                    role: .user,
+                    content: """
+                    Current lesson:
+                    \(lesson.promptDump)
+
+                    Discussion:
+                    \(transcript(messages, limit: 32))
+
+                    Write the revised guide for this lesson only.
+                    """
+                ),
+            ],
+            settings: request
+        )
+        guard let revised = parseLesson(raw, existing: lesson, fallback: fallback) else {
+            throw ReviewError.unreadableLesson
+        }
+        return revised
     }
 
     private static func transcript(_ messages: [Message], limit: Int = 16) -> String {
@@ -94,7 +146,7 @@ enum LessonDistiller {
         }
     }
 
-    private static func parseLesson(_ raw: String, fallback: LessonCandidate) -> Lesson? {
+    private static func parseLesson(_ raw: String, existing: Lesson?, fallback: LessonCandidate) -> Lesson? {
         guard let object = JSONSlice.object(in: raw) else { return nil }
         let title = (object["title"] as? String)?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
         if title.isEmpty { return nil }
@@ -120,7 +172,7 @@ enum LessonDistiller {
             .filter { !$0.isEmpty }
         let now = Date()
         return Lesson(
-            id: UUID(),
+            id: existing?.id ?? UUID(),
             kind: kind,
             title: title,
             sense: (object["sense"] as? String)?.trimmingCharacters(in: .whitespacesAndNewlines) ?? fallback.sense,
@@ -129,11 +181,11 @@ enum LessonDistiller {
             examples: examples,
             contrasts: contrasts,
             pitfalls: pitfalls,
-            sourceMessageID: nil,
-            createdAt: now,
+            sourceMessageID: existing?.sourceMessageID,
+            createdAt: existing?.createdAt ?? now,
             updatedAt: now,
-            nextReviewAt: now,
-            intervalDays: 1
+            nextReviewAt: existing?.nextReviewAt ?? now,
+            intervalDays: existing?.intervalDays ?? 1
         )
     }
 }
