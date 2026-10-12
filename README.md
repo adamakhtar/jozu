@@ -6,7 +6,7 @@ Open `Jozu.xcodeproj` on a Mac and run the **Jozu** scheme (macOS 14+).
 
 Settings → add an OpenAI-compatible key. Chat, lessons, and review need it.
 Threads are saved on this Mac. **New** starts another; the title under Jozu lists past chats.
-Dictate in English or Japanese with the mic — Speech runs on this Mac, not a server.
+Dictate in British English or Japanese with the mic — Speech runs on this Mac, not a server.
 Attach, drop, or paste a photo of text — Vision reads it on-device.
 Remember a turn to save a lesson (word sense, grammar, or nuance). Lessons is a full screen; search the library. Due lessons can be reviewed.
 

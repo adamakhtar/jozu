@@ -2,6 +2,12 @@
 
 Append-only. Newest first. Supersede; do not rewrite history.
 
+## 2026-10-12 — Mic falls back to Mac Keyboard Dictation
+
+**Choice:** `SFSpeechRecognizer` with `requiresOnDeviceRecognition` is only used when a locale reports an on-device pack. Error 102 (`kLSRErrorDomain` “Failed to access assets”) is not shown; the mic then invokes AppKit `startDictation:` into the composer. That is the same Keyboard → Dictation the learner already enabled. Audio still does not go to a third-party API. We do not set `requiresOnDeviceRecognition = false` (Apple’s speech servers).
+
+**Why:** Keyboard → Dictation downloads system dictation assets. The Speech framework’s on-device pack is a different catalog; a sandboxed app often cannot load it even when Dictation works. The 102 error was that mismatch. System dictation types into the focused NSTextView, which is the part-or-whole-of-a-message behavior we want.
+
 ## 2026-10-12 — Don’t trust `supportsOnDeviceRecognition` on Mac
 
 **Choice:** Do not refuse to start dictation because `SFSpeechRecognizer.supportsOnDeviceRecognition` is false. Resolve English/Japanese against `supportedLocales()` (prefer `en-GB`, then any `en_*` the Mac has). Still set `requiresOnDeviceRecognition` on the request so audio never goes to a server. Only surface “not installed” if the recognition task itself fails (e.g. assistant error 1101).

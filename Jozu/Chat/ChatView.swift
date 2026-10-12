@@ -143,7 +143,7 @@ struct ChatView: View {
                 .pickerStyle(.segmented)
                 .labelsHidden()
                 .fixedSize()
-                .help("Language to transcribe. English is British. On this Mac, not a server.")
+                .help("Language for in-app Speech when the Mac has an on-device pack. Otherwise the mic uses Keyboard → Dictation; pick English or Japanese in that bubble.")
 
                 Button {
                     Task { await toggleDictation() }
@@ -292,6 +292,7 @@ struct ChatView: View {
             insertsSpace: DictationInsertion.usesSpace(locale: locale)
         )
         composerFocused = true
+        try? await Task.sleep(nanoseconds: 50_000_000)
         await dictation.start(locale: locale) { spoken, isFinal in
             applyTranscript(spoken, isFinal: isFinal)
         }

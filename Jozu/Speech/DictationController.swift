@@ -3,6 +3,10 @@ import Foundation
 import Observation
 import Speech
 
+#if os(macOS)
+import AppKit
+#endif
+
 enum DictationLanguage: String, CaseIterable, Identifiable, Sendable {
     case native
     case target
@@ -30,6 +34,24 @@ enum SpeechLocale {
 
     static func locale(forLanguageName name: String) -> Locale {
         resolved(from: Locale(identifier: identifier(forLanguageName: name)))
+    }
+
+    /// Locales of the same language that actually report an on-device pack.
+    /// `supportedLocales()` is every Speech language, not what’s downloaded.
+    static func onDeviceCandidates(from preferred: Locale) -> [Locale] {
+        let wanted = languageCode(preferred)
+        let preferredID = canonical(preferred.identifier)
+        let matches = SFSpeechRecognizer.supportedLocales().filter { languageCode($0) == wanted }
+        let onDevice = matches.filter { SFSpeechRecognizer(locale: $0)?.supportsOnDeviceRecognition == true }
+        return onDevice.sorted { a, b in
+            let ac = canonical(a.identifier)
+            let bc = canonical(b.identifier)
+            if ac == preferredID { return true }
+            if bc == preferredID { return false }
+            if ac.hasPrefix("en-gb") { return true }
+            if bc.hasPrefix("en-gb") { return false }
+            return ac < bc
+        }
     }
 
     /// Pick a Speech locale the Mac actually has. Keyboard → Dictation may list
@@ -70,7 +92,7 @@ enum DictationError: LocalizedError {
     case microphoneDenied
     case speechDenied
     case recognizerUnavailable
-    case onDeviceUnavailable(String)
+    case onDeviceUnavailable
     case noInputDevice
 
     var errorDescription: String? {
@@ -81,8 +103,8 @@ enum DictationError: LocalizedError {
             return "Speech recognition is off. Enable it in System Settings → Privacy & Security → Speech Recognition."
         case .recognizerUnavailable:
             return "Dictation isn’t available for that language on this Mac."
-        case .onDeviceUnavailable(let name):
-            return "Couldn’t start on-device \(name). Add that exact language in System Settings → Keyboard → Dictation (British English is United Kingdom, not US) and allow Jozu under Privacy & Security → Speech Recognition."
+        case .onDeviceUnavailable:
+            return "Couldn’t start dictation. Click the message field, then press the Dictation key (Globe or Fn). Use the languages enabled in System Settings → Keyboard → Dictation."
         case .noInputDevice:
             return "No microphone found."
         }
@@ -158,18 +180,24 @@ final class DictationController {
     func start(locale: Locale, onTranscript: @escaping (String, Bool) -> Void) async {
         stop()
         errorMessage = nil
+        self.onTranscript = onTranscript
+        let speechLocales = SpeechLocale.onDeviceCandidates(from: locale)
+        guard let speechLocale = speechLocales.first else {
+            try? await Task.sleep(nanoseconds: 50_000_000)
+            invokeSystemDictation()
+            return
+        }
         do {
             try await Self.authorize()
-            let recognizer = try await Self.makeRecognizer(locale: locale)
+            let recognizer = try await Self.makeRecognizer(locale: speechLocale)
             self.recognizer = recognizer
-            self.onTranscript = onTranscript
             wantsListening = true
             try startEngine()
             try startTask()
             isListening = true
         } catch {
             stop()
-            errorMessage = error.localizedDescription
+            invokeSystemDictation()
         }
     }
 
@@ -236,11 +264,15 @@ final class DictationController {
                 restartTask()
                 return
             }
-            if Self.isOnDeviceAssetError(ns), let recognizer {
-                errorMessage = DictationError.onDeviceUnavailable(Self.displayName(recognizer.locale)).errorDescription
-            } else {
-                errorMessage = error.localizedDescription
+            if Self.isOnDeviceAssetError(ns) {
+                stop()
+                Task { @MainActor in
+                    try? await Task.sleep(nanoseconds: 50_000_000)
+                    invokeSystemDictation()
+                }
+                return
             }
+            errorMessage = error.localizedDescription
             stop()
         }
     }
@@ -278,10 +310,7 @@ final class DictationController {
             throw DictationError.recognizerUnavailable
         }
         recognizer.defaultTaskHint = .dictation
-        // On macOS this flag is often false even when Keyboard → Dictation is
-        // on and on-device requests work. Give the asset catalog a moment,
-        // then proceed anyway and keep requiresOnDeviceRecognition on the request.
-        if !recognizer.isAvailable || !recognizer.supportsOnDeviceRecognition {
+        if !recognizer.isAvailable {
             try await Task.sleep(nanoseconds: 400_000_000)
         }
         guard recognizer.isAvailable else {
@@ -290,20 +319,54 @@ final class DictationController {
         return recognizer
     }
 
+    private func invokeSystemDictation() {
+        isListening = false
+        wantsListening = false
+        #if os(macOS)
+        focusComposerTextView()
+        let started = NSApp.sendAction(Selector(("startDictation:")), to: nil, from: nil)
+        if !started {
+            errorMessage = DictationError.onDeviceUnavailable.errorDescription
+        }
+        #else
+        errorMessage = DictationError.onDeviceUnavailable.errorDescription
+        #endif
+    }
+
+    #if os(macOS)
+    private func focusComposerTextView() {
+        guard let window = NSApp.keyWindow else { return }
+        if window.firstResponder is NSTextView { return }
+        if let scroll = window.firstResponder as? NSScrollView,
+           let text = scroll.documentView as? NSTextView {
+            window.makeFirstResponder(text)
+            return
+        }
+        if let text = firstTextView(in: window.contentView) {
+            window.makeFirstResponder(text)
+        }
+    }
+
+    private func firstTextView(in view: NSView?) -> NSTextView? {
+        guard let view else { return nil }
+        if let text = view as? NSTextView { return text }
+        for child in view.subviews {
+            if let text = firstTextView(in: child) { return text }
+        }
+        return nil
+    }
+    #endif
+
     private static func isNoSpeech(_ error: NSError) -> Bool {
         error.domain == "kAFAssistantErrorDomain" && (error.code == 216 || error.code == 1110)
     }
 
     private static func isOnDeviceAssetError(_ error: NSError) -> Bool {
-        if error.domain == "kAFAssistantErrorDomain", error.code == 1101 {
-            return true
-        }
+        if error.domain == "kLSRErrorDomain", error.code == 102 { return true }
+        if error.domain == "kAFAssistantErrorDomain", error.code == 1101 { return true }
         let text = error.localizedDescription.lowercased()
-        return text.contains("on-device") || text.contains("on device")
-    }
-
-    private static func displayName(_ locale: Locale) -> String {
-        Locale.current.localizedString(forIdentifier: locale.identifier) ?? locale.identifier
+        return text.contains("access assets") || text.contains("no asset")
+            || text.contains("on-device") || text.contains("on device")
     }
 }
 

@@ -10,7 +10,7 @@ Slice: conversations + on-device dictation, on top of S8 Lessons
 
 Clear is gone. **New** starts another thread; past chats are under the Jozu title. Dictation is on-device Apple Speech (British English `en-GB` / Japanese `ja-JP`) — not an audio API. Mic inserts into the current message; **New with dictation** starts a blank thread already listening.
 
-This Linux agent cannot compile or launch the app. Verify on a Mac: New keeps the old thread, switch back via the title menu, dictate EN and JA into part of a draft, confirm no network transcription. The EN/JA toggle must show **EN**, not a clipped mark. Dictation should start even when Keyboard → Dictation is already on; we no longer treat `supportsOnDeviceRecognition == false` as “not installed.”
+This Linux agent cannot compile or launch the app. Verify on a Mac: the mic should open Keyboard → Dictation in the composer (not “Failed to access assets”). Pick English/Japanese in the dictation bubble if needed. New still keeps old threads.
 
 ## Next (do in this order)
 

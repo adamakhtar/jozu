@@ -17,7 +17,7 @@ Questions that are open. Defaults in `STATUS.md` are in force until answered.
 
 - No Mac in this environment, so S0 is unverified.
 - Sandbox + Accessibility + ScreenCaptureKit entitlements will need a real usage-description story and possibly notarization later.
-- On-device Speech: prefer en-GB / ja-JP, but use whatever matching locale `supportedLocales()` reports. `supportsOnDeviceRecognition` is a false negative on macOS — do not gate on it. Do not fall back to network.
+- Dictation: Speech framework on-device packs are a different catalog from Keyboard → Dictation. Error 102 “Failed to access assets” → use `startDictation:` instead of Apple’s speech servers.
 - First Mac check of dictation + thread switching; Linux cannot compile the app.
 - Multilingual OCR: Vision is strong for CJK / Latin; some scripts need language hints (`recognitionLanguages`).
 - Grading: ask the model for JSON `{grade, reason, next_hint}` and parse it. Don’t regex the prose.
